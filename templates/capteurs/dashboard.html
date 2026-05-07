@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="fr" id="html-tag">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Dashboard Pro</title>
+    
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    
+    <style>
+        /* ===== VARIABLES MODE CLAIR/SOMBRE ===== */
+        :root {
+            --bg-gradient-light: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --bg-gradient-dark: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            --card-bg-light: rgba(255, 255, 255, 0.95);
+            --card-bg-dark: rgba(30, 30, 46, 0.95);
+            --text-light: #333;
+            --text-dark: #fff;
+            --shadow-light: 0 10px 30px rgba(0,0,0,0.1);
+            --shadow-dark: 0 10px 30px rgba(0,0,0,0.3);
+            --border-light: 1px solid rgba(255,255,255,0.2);
+            --border-dark: 1px solid rgba(255,255,255,0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* ===== MODE CLAIR (DÉFAUT) ===== */
+        body.light-mode {
+            background: var(--bg-gradient-light);
+            color: var(--text-light);
+        }
+        
+        body.light-mode .card,
+        body.light-mode .stat-card,
+        body.light-mode .chart-card,
+        body.light-mode .alerts-card,
+        body.light-mode .room-card {
+            background: var(--card-bg-light);
+            border: var(--border-light);
+            box-shadow: var(--shadow-light);
+        }
+
+        /* ===== MODE SOMBRE ===== */
+        body.dark-mode {
+            background: var(--bg-gradient-dark);
+            color: var(--text-dark);
+        }
+        
+        body.dark-mode .card,
+        body.dark-mode .stat-card,
+        body.dark-mode .chart-card,
+        body.dark-mode .alerts-card,
+        body.dark-mode .room-card {
+            background: var(--card-bg-dark);
+            border: var(--border-dark);
+            box-shadow: var(--shadow-dark);
+            color: var(--text-dark);
+        }
+
+        body.dark-mode .text-muted {
+            color: #aaa !important;
+        }
+
+        body.dark-mode .btn-outline-primary {
+            color: #fff;
+            border-color: #667eea;
+        }
+
+        body.dark-mode .btn-outline-primary:hover {
+            background: #667eea;
+            color: #fff;
+        }
+
+        /* ===== STYLES COMMUNS ===== */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .card, .stat-card, .chart-card, .alerts-card, .room-card {
+            border-radius: 25px;
+            padding: 25px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 0.8s ease;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover, .room-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+        }
+
+        .theme-switch {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .theme-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .theme-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+
+        .theme-btn.active {
+            background: white;
+            color: #667eea;
+        }
+
+        /* ===== BADGES ===== */
+        .badge-container {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255,255,255,0.95);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        /* ===== STATISTIQUES ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .stat-icon.temp { background: linear-gradient(135deg, #ff6b6b 0%, #ee5253 100%); color: white; }
+        .stat-icon.hum { background: linear-gradient(135deg, #48dbfb 0%, #0abde3 100%); color: white; }
+        .stat-icon.max { background: linear-gradient(135deg, #feca57 0%, #ff9f43 100%); color: white; }
+        .stat-icon.min { background: linear-gradient(135deg, #54a0ff 0%, #2e86de 100%); color: white; }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .temp-value { color: #ff6b6b; }
+        .hum-value { color: #48dbfb; }
+
+        /* ===== GRILLE PRINCIPALE ===== */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        /* ===== CARTE MÉTÉO ===== */
+        .weather-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 25px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        .weather-temp {
+            font-size: 48px;
+            font-weight: 700;
+        }
+
+        .weather-icon {
+            font-size: 48px;
+        }
+
+        .weather-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* ===== ALERTES ===== */
+        .alert-item {
+            padding: 15px;
+            background: linear-gradient(135deg, #fff5f5 0%, #fff0f0 100%);
+            border-left: 4px solid #ff6b6b;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            animation: slideInRight 0.5s ease;
+        }
+
+        body.dark-mode .alert-item {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+        }
+
+        /* ===== PIÈCES ===== */
+        .rooms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .room-temp {
+            font-size: 32px;
+            font-weight: 700;
+            color: #ff6b6b;
+        }
+
+        .room-hum {
+            font-size: 32px;
+            font-weight: 700;
+            color: #48dbfb;
+        }
+
+        .room-status {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #10ac84;
+            position: relative;
+        }
+
+        .room-status::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: inherit;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+
+        /* ===== BOUTONS D'ACTION ===== */
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .btn-action.pdf {
+            background: #ff6b6b;
+            color: white;
+        }
+
+        .btn-action.translate {
+            background: #54a0ff;
+            color: white;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes fadeInUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(30px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 1200px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .main-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .header { flex-direction: column; text-align: center; }
+            .badge-container { justify-content: center; }
+        }
+    </style>
+</head>
+<body class="light-mode" id="body">
+    <div class="container">
+        <!-- ===== HEADER ===== -->
+        <div class="card header">
+            <h1>
+                <i class="fas fa-microchip"></i>
+                <span id="page-title">IoT Dashboard Pro</span>
+            </h1>
+            
+            <div class="badge-container">
+                <div class="badge">
+                    <i class="fas fa-database"></i>
+                    <span>{{ total_mesures }} mesures</span>
+                </div>
+                <div class="badge">
+                    <i class="fas fa-wifi"></i>
+                    <span id="connection-status">Connecté</span>
+                </div>
+                <div class="badge">
+                    <i class="fas fa-clock"></i>
+                    <span id="live-time"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== CONTROLES ===== -->
+        <div class="card">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="theme-switch">
+                    <button class="theme-btn active" onclick="setTheme('light')">
+                        <i class="fas fa-sun"></i>
+                    </button>
+                    <button class="theme-btn" onclick="setTheme('dark')">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn-action pdf" onclick="exportPDF()">
+                        <i class="fas fa-file-pdf"></i> Export PDF
+                    </button>
+                    <button class="btn-action translate" onclick="translatePage()">
+                        <i class="fas fa-language"></i> 
+                        <span id="lang-btn">English</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== STATISTIQUES ===== -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon temp">
+                    <i class="fas fa-thermometer-half"></i>
+                </div>
+                <div class="stat-label">Température moyenne</div>
+                <div class="stat-value temp-value">
+                    {{ stats.temp_moy|floatformat:"1"|default:"--" }}°C
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon hum">
+                    <i class="fas fa-tint"></i>
+                </div>
+                <div class="stat-label">Humidité moyenne</div>
+                <div class="stat-value hum-value">
+                    {{ stats.hum_moy|floatformat:"1"|default:"--" }}%
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon max">
+                    <i class="fas fa-arrow-up"></i>
+                </div>
+                <div class="stat-label">Température max</div>
+                <div class="stat-value temp-value">
+                    {{ stats.temp_max|floatformat:"1"|default:"--" }}°C
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon min">
+                    <i class="fas fa-arrow-down"></i>
+                </div>
+                <div class="stat-label">Température min</div>
+                <div class="stat-value temp-value">
+                    {{ stats.temp_min|floatformat:"1"|default:"--" }}°C
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== GRILLE PRINCIPALE ===== -->
+        <div class="main-grid">
+            <!-- GRAPHIQUE -->
+            <div class="chart-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h3><i class="fas fa-chart-line" style="color: #667eea;"></i> Évolution température</h3>
+                    <div>
+                        <button class="btn btn-sm btn-outline-primary" onclick="updateChart('24h')">24h</button>
+                        <button class="btn btn-sm btn-outline-primary" onclick="updateChart('7j')">7j</button>
+                        <button class="btn btn-sm btn-outline-primary" onclick="updateChart('30j')">30j</button>
+                    </div>
+                </div>
+                <div style="height: 250px; position: relative;">
+                    <canvas id="temperatureChart"></canvas>
+                </div>
+            </div>
+
+            <!-- CARTE MÉTÉO & IA -->
+            <div class="weather-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h4><i class="fas fa-cloud-sun"></i> Météo & IA</h4>
+                        <div class="weather-temp mt-3" id="weather-temp">--°C</div>
+                        <div id="weather-desc">Chargement...</div>
+                    </div>
+                    <div class="weather-icon" id="weather-icon">
+                        <i class="fas fa-circle-notch fa-spin"></i>
+                    </div>
+                </div>
+                
+                <div class="weather-detail">
+                    <div>
+                        <i class="fas fa-wind"></i>
+                        <span id="weather-wind">-- km/h</span>
+                    </div>
+                    <div>
+                        <i class="fas fa-tint"></i>
+                        <span id="weather-hum">--%</span>
+                    </div>
+                    <div>
+                        <i class="fas fa-compress"></i>
+                        <span id="weather-pressure">-- hPa</span>
+                    </div>
+                </div>
+                
+                <!-- PRÉVISION IA -->
+                <div class="mt-4 p-3" style="background: rgba(255,255,255,0.1); border-radius: 15px;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-robot"></i> Prévision IA</span>
+                        <span class="badge" style="background: #ff9f43; color: white;">Confiance 95%</span>
+                    </div>
+                    <div class="mt-2" id="ia-prediction">
+                        Température dans 1h: <strong>--°C</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== ALERTES ===== -->
+        <div class="alerts-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h3><i class="fas fa-bell" style="color: #ff6b6b;"></i> Alertes récentes</h3>
+                <span class="badge" style="background: #ff6b6b; color: white;" id="alert-count">3 nouvelles</span>
+            </div>
+            <div id="alerts-container">
+                <div class="alert-item">
+                    <div class="d-flex justify-content-between">
+                        <strong><i class="fas fa-exclamation-triangle" style="color: #ff6b6b;"></i> Capteur hors ligne</strong>
+                        <small>Il y a 5 min</small>
+                    </div>
+                    <div class="mt-1">Le capteur du Salon ne répond pas</div>
+                </div>
+                <div class="alert-item">
+                    <div class="d-flex justify-content-between">
+                        <strong><i class="fas fa-thermometer-half"></i> Température élevée</strong>
+                        <small>Il y a 15 min</small>
+                    </div>
+                    <div class="mt-1">Cuisine: 31.5°C (seuil: 30°C)</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== PIÈCES ===== -->
+        <h3 style="color: white; margin: 30px 0 20px;">
+            <i class="fas fa-home"></i> Mesures par pièce
+        </h3>
+        
+        <div class="rooms-grid" id="rooms-container">
+            {% for mesure in dernieres_mesures %}
+            <div class="room-card">
+                <div class="d-flex justify-content-between align-items-start">
+                    <h4><i class="fas fa-room"></i> {{ mesure.piece.nom }}</h4>
+                    <div class="room-status"></div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-6 text-center">
+                        <div style="color: #666; font-size: 14px;">
+                            <i class="fas fa-thermometer-half" style="color: #ff6b6b;"></i> Température
+                        </div>
+                        <div class="room-temp">
+                            {{ mesure.temperature|floatformat:"1"|default:"--" }}°C
+                        </div>
+                    </div>
+                    <div class="col-6 text-center">
+                        <div style="color: #666; font-size: 14px;">
+                            <i class="fas fa-tint" style="color: #48dbfb;"></i> Humidité
+                        </div>
+                        <div class="room-hum">
+                            {{ mesure.humidite|floatformat:"1"|default:"--" }}%
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3 text-muted">
+                    <i class="fas fa-clock"></i> {{ mesure.timestamp|timesince }}
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="card text-center p-5">
+                    <i class="fas fa-hourglass-half fa-3x mb-3" style="color: #999;"></i>
+                    <h4>Aucune mesure pour le moment</h4>
+                    <p>En attente des données du capteur...</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        // =========================================
+        // 1. MODE SOMBRE/CLAIR - CORRIGÉ
+        // =========================================
+        function setTheme(mode) {
+            const body = document.getElementById('body');
+            const btns = document.querySelectorAll('.theme-btn');
+            
+            btns.forEach(btn => btn.classList.remove('active'));
+            
+            // Trouver le bouton cliqué
+            const activeBtn = mode === 'dark' 
+                ? document.querySelector('.theme-btn[onclick="setTheme(\'dark\')"]')
+                : document.querySelector('.theme-btn[onclick="setTheme(\'light\')"]');
+            
+            if (activeBtn) activeBtn.classList.add('active');
+            
+            if (mode === 'dark') {
+                body.classList.remove('light-mode');
+                body.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark');
+            } else {
+                body.classList.remove('dark-mode');
+                body.classList.add('light-mode');
+                localStorage.setItem('theme', 'light');
+            }
+        }
+
+        // Charger le thème sauvegardé
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        setTheme(savedTheme);
+
+        // =========================================
+        // 2. HORLOGE LIVE
+        // =========================================
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('live-time').innerHTML = now.toLocaleTimeString('fr-FR');
+        }
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        // =========================================
+        // 3. GRAPHIQUE - VERSION CORRIGÉE
+        // =========================================
+        let chart;
+
+        function initChart() {
+            console.log("🔄 Initialisation du graphique...");
+            
+            // Récupérer le canvas
+            const canvas = document.getElementById('temperatureChart');
+            if (!canvas) {
+                console.error("❌ Canvas non trouvé !");
+                return;
+            }
+            
+            const ctx = canvas.getContext('2d');
+            
+            // Récupérer les données de Django
+            let labels = [
+                {% for label in chart_labels %}
+                    "{{ label }}",
+                {% endfor %}
+            ];
+            
+            let data = [
+                {% for value in chart_data %}
+                    {{ value }},
+                {% endfor %}
+            ];
+            
+            console.log("Labels Django:", labels);
+            console.log("Données Django:", data);
+            
+            // Données par défaut si vide
+            if (!labels || labels.length === 0 || !data || data.length === 0) {
+                console.log("⚠️ Pas de données Django, utilisation de données de test");
+                labels = ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'];
+                data = [16.5, 16.8, 16.4, 16.3, 16.2, 16.1];
+            }
+            
+            // Détruire l'ancien graphique s'il existe
+            if (chart) {
+                chart.destroy();
+            }
+            
+            // Créer le nouveau graphique
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Température (°C)',
+                        data: data,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 2,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#667eea',
+                        pointBorderColor: 'white',
+                        pointBorderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y + '°C';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: '°C'
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    }
+                }
+            });
+            
+            console.log("✅ Graphique créé avec", labels.length, "points");
+        }
+
+        function updateChart(period) {
+            console.log('🔄 Changement période:', period);
+            // TODO: Appel AJAX pour nouvelles données
+            alert('Fonctionnalité à venir : chargement des données ' + period);
+        }
+
+        // =========================================
+        // 4. MÉTÉO (Simulation)
+        // =========================================
+        async function getWeather() {
+            try {
+                // Simulation pour l'exemple
+                document.getElementById('weather-temp').innerHTML = '22°C';
+                document.getElementById('weather-desc').innerHTML = 'Partiellement nuageux';
+                document.getElementById('weather-icon').innerHTML = '<i class="fas fa-cloud-sun fa-3x"></i>';
+                document.getElementById('weather-wind').innerHTML = '12 km/h';
+                document.getElementById('weather-hum').innerHTML = '65%';
+                document.getElementById('weather-pressure').innerHTML = '1013 hPa';
+                
+                // PRÉVISION IA (simulée)
+                const prediction = (21 + Math.random() * 3).toFixed(1);
+                document.getElementById('ia-prediction').innerHTML = 
+                    `Température dans 1h: <strong>${prediction}°C</strong>`;
+                    
+            } catch (error) {
+                console.error('Erreur météo:', error);
+            }
+        }
+
+        // =========================================
+        // 5. EXPORT PDF
+        // =========================================
+        async function exportPDF() {
+            alert('Fonctionnalité Export PDF à venir');
+        }
+
+        // =========================================
+        // 6. MULTI-LANGUES
+        // =========================================
+        let currentLang = 'fr';
+        
+        function translatePage() {
+            const btn = document.getElementById('lang-btn');
+            
+            if (currentLang === 'fr') {
+                currentLang = 'en';
+                btn.innerHTML = 'Français';
+                document.getElementById('page-title').innerHTML = 'IoT Pro Dashboard';
+            } else {
+                currentLang = 'fr';
+                btn.innerHTML = 'English';
+                document.getElementById('page-title').innerHTML = 'IoT Dashboard Pro';
+            }
+            
+            // Animation
+            document.body.style.opacity = '0.5';
+            setTimeout(() => document.body.style.opacity = '1', 200);
+        }
+
+        // =========================================
+        // INITIALISATION
+        // =========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            // Attendre un peu que tout soit chargé
+            setTimeout(function() {
+                initChart();
+                getWeather();
+                
+                // Connection status simulation
+                setInterval(() => {
+                    document.getElementById('connection-status').innerHTML = 'Connecté';
+                }, 5000);
+                
+                console.log('✅ Dashboard initialisé !');
+            }, 100);
+        });
+    </script>
+</body>
+</html>
