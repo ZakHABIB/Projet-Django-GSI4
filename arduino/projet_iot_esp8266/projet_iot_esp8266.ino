@@ -3,7 +3,8 @@
 #include <WiFiClientSecure.h>
 #include <DHT.h>
 
-#define DHTPIN D4
+// D2 sur NodeMCU ESP8266 = GPIO4.
+#define DHTPIN D2
 #define DHTTYPE DHT11
 
 DHT dht(DHTPIN, DHTTYPE);
@@ -11,8 +12,8 @@ DHT dht(DHTPIN, DHTTYPE);
 const char* ssid = "NOM_WIFI";
 const char* password = "MOT_DE_PASSE_WIFI";
 
-// PythonAnywhere: remplace zakar par ton nom d'utilisateur PythonAnywhere.
-String serverName = "https://zakar.pythonanywhere.com/api/add/";
+String nomPiece = "Salon";
+String serverName = "https://zakhabib.pythonanywhere.com/api/add/";
 
 // Test local avant PythonAnywhere:
 // String serverName = "http://192.168.1.10:8000/api/add/";
@@ -47,7 +48,8 @@ void loop() {
       return;
     }
 
-    String data = "{\"temperature\":" + String(temperature, 1) +
+    String data = "{\"piece\":\"" + nomPiece + "\"," +
+                  "\"temperature\":" + String(temperature, 1) +
                   ",\"humidite\":" + String(humidite, 1) + "}";
 
     Serial.println("Nouvelle mesure");

@@ -1,13 +1,16 @@
 from rest_framework import generics
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 
 from .models import DHT11, Mesure, Piece
 from .serializers import DHT11Serializer
 
 
 def sync_mesure_from_dht11(dht11):
-    piece, _ = Piece.objects.get_or_create(nom='DHT11')
+    piece_nom = getattr(dht11, 'piece_nom', 'DHT11') or 'DHT11'
+    piece, _ = Piece.objects.get_or_create(nom=piece_nom)
     Mesure.objects.create(
         piece=piece,
         temperature=dht11.temperature,
@@ -32,6 +35,7 @@ def derniere_mesure(request):
     return Response(serializer.data)
 
 
+@method_decorator(csrf_exempt, name='dispatch')
 class AjouterMesure(generics.CreateAPIView):
     queryset = DHT11.objects.all()
     serializer_class = DHT11Serializer
