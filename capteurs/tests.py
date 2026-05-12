@@ -1,6 +1,7 @@
 import json
 from unittest.mock import patch
 
+import requests
 from django.test import Client, TestCase, override_settings
 
 from .models import DHT11, Mesure, Piece
@@ -127,8 +128,10 @@ class DHT11ApiTests(TestCase):
         TEMPERATURE_ALERT_THRESHOLD=30,
         CALLMEBOT_API_KEY='VOTRE_CLE_API',
     )
-    @patch('capteurs.alerts.Client')
-    def test_twilio_whatsapp_alert_is_sent_when_configured(self, mock_client):
+    @patch('capteurs.alerts.requests.post')
+    def test_twilio_whatsapp_alert_is_sent_when_configured(self, mock_post):
+        mock_post.return_value.raise_for_status.return_value = None
+
         response = self.client.post(
             '/api/add/',
             data=json.dumps({'piece': 'Salon', 'temperature': 31, 'humidite': 52}),
@@ -136,12 +139,12 @@ class DHT11ApiTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 201)
-        mock_client.assert_called_once_with('AC123', 'token')
-        mock_client.return_value.messages.create.assert_called_once()
-        kwargs = mock_client.return_value.messages.create.call_args.kwargs
-        self.assertEqual(kwargs['from_'], 'whatsapp:+14155238886')
-        self.assertEqual(kwargs['to'], 'whatsapp:+212706199603')
-        self.assertIn('Salon', kwargs['body'])
+        mock_post.assert_called_once()
+        kwargs = mock_post.call_args.kwargs
+        self.assertEqual(kwargs['auth'], ('AC123', 'token'))
+        self.assertEqual(kwargs['data']['From'], 'whatsapp:+14155238886')
+        self.assertEqual(kwargs['data']['To'], 'whatsapp:+212706199603')
+        self.assertIn('Salon', kwargs['data']['Body'])
 
     @override_settings(
         TWILIO_ACCOUNT_SID='AC123',
@@ -151,9 +154,9 @@ class DHT11ApiTests(TestCase):
         TEMPERATURE_ALERT_THRESHOLD=30,
         CALLMEBOT_API_KEY='VOTRE_CLE_API',
     )
-    @patch('capteurs.alerts.Client')
-    def test_twilio_error_does_not_block_measure_recording(self, mock_client):
-        mock_client.return_value.messages.create.side_effect = Exception('Twilio unavailable')
+    @patch('capteurs.alerts.requests.post')
+    def test_twilio_error_does_not_block_measure_recording(self, mock_post):
+        mock_post.side_effect = requests.RequestException('Twilio unavailable')
 
         response = self.client.post(
             '/api/add/',

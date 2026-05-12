@@ -2,7 +2,6 @@ import logging
 
 import requests
 from django.conf import settings
-from twilio.rest import Client
 
 logger = logging.getLogger(__name__)
 
@@ -42,15 +41,23 @@ def send_twilio_whatsapp(message):
         return False
 
     try:
-        client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
-        client.messages.create(
-            body=message,
-            from_=settings.TWILIO_WHATSAPP_FROM,
-            to=f'whatsapp:{settings.WHATSAPP_PHONE}',
+        response = requests.post(
+            (
+                'https://api.twilio.com/2010-04-01/Accounts/'
+                f'{settings.TWILIO_ACCOUNT_SID}/Messages.json'
+            ),
+            data={
+                'Body': message,
+                'From': settings.TWILIO_WHATSAPP_FROM,
+                'To': f'whatsapp:{settings.WHATSAPP_PHONE}',
+            },
+            auth=(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN),
+            timeout=10,
         )
+        response.raise_for_status()
         logger.info('Alerte WhatsApp envoyee avec Twilio.')
         return True
-    except Exception:
+    except requests.RequestException:
         logger.exception('Erreur pendant l envoi de l alerte WhatsApp avec Twilio.')
         return False
 
