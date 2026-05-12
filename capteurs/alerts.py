@@ -2,7 +2,6 @@ import logging
 
 import requests
 from django.conf import settings
-from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
 
 logger = logging.getLogger(__name__)
@@ -51,7 +50,7 @@ def send_twilio_whatsapp(message):
         )
         logger.info('Alerte WhatsApp envoyee avec Twilio.')
         return True
-    except TwilioRestException:
+    except Exception:
         logger.exception('Erreur pendant l envoi de l alerte WhatsApp avec Twilio.')
         return False
 

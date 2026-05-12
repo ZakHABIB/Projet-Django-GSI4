@@ -142,3 +142,25 @@ class DHT11ApiTests(TestCase):
         self.assertEqual(kwargs['from_'], 'whatsapp:+14155238886')
         self.assertEqual(kwargs['to'], 'whatsapp:+212706199603')
         self.assertIn('Salon', kwargs['body'])
+
+    @override_settings(
+        TWILIO_ACCOUNT_SID='AC123',
+        TWILIO_AUTH_TOKEN='token',
+        TWILIO_WHATSAPP_FROM='whatsapp:+14155238886',
+        WHATSAPP_PHONE='+212706199603',
+        TEMPERATURE_ALERT_THRESHOLD=30,
+        CALLMEBOT_API_KEY='VOTRE_CLE_API',
+    )
+    @patch('capteurs.alerts.Client')
+    def test_twilio_error_does_not_block_measure_recording(self, mock_client):
+        mock_client.return_value.messages.create.side_effect = Exception('Twilio unavailable')
+
+        response = self.client.post(
+            '/api/add/',
+            data=json.dumps({'piece': 'Salon', 'temperature': 31, 'humidite': 52}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(DHT11.objects.count(), 1)
+        self.assertEqual(Mesure.objects.count(), 1)
