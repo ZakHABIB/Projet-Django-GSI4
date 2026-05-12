@@ -150,6 +150,31 @@ class DHT11ApiTests(TestCase):
         TWILIO_ACCOUNT_SID='AC123',
         TWILIO_AUTH_TOKEN='token',
         TWILIO_WHATSAPP_FROM='whatsapp:+14155238886',
+        TWILIO_CONTENT_SID='HX123',
+        WHATSAPP_PHONE='+212706199603',
+        TEMPERATURE_ALERT_THRESHOLD=30,
+        CALLMEBOT_API_KEY='VOTRE_CLE_API',
+    )
+    @patch('capteurs.alerts.requests.post')
+    def test_twilio_content_template_is_used_when_configured(self, mock_post):
+        mock_post.return_value.raise_for_status.return_value = None
+
+        response = self.client.post(
+            '/api/add/',
+            data=json.dumps({'piece': 'Salon', 'temperature': 31, 'humidite': 52}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        data = mock_post.call_args.kwargs['data']
+        self.assertEqual(data['ContentSid'], 'HX123')
+        self.assertIn('ContentVariables', data)
+        self.assertNotIn('Body', data)
+
+    @override_settings(
+        TWILIO_ACCOUNT_SID='AC123',
+        TWILIO_AUTH_TOKEN='token',
+        TWILIO_WHATSAPP_FROM='whatsapp:+14155238886',
         WHATSAPP_PHONE='+212706199603',
         TEMPERATURE_ALERT_THRESHOLD=30,
         CALLMEBOT_API_KEY='VOTRE_CLE_API',

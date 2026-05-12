@@ -19,7 +19,10 @@ def sync_mesure_from_dht11(dht11):
         humidite=dht11.humidite,
         timestamp=dht11.date,
     )
-    send_temperature_alert(mesure, previous_mesure)
+    try:
+        send_temperature_alert(mesure, previous_mesure)
+    except Exception:
+        pass
     return mesure
 
 

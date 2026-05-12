@@ -1,4 +1,5 @@
 import logging
+import json
 
 import requests
 from django.conf import settings
@@ -32,7 +33,14 @@ def build_temperature_alert_message(mesure):
     )
 
 
-def send_twilio_whatsapp(message):
+def build_twilio_content_variables(mesure):
+    return json.dumps({
+        '1': mesure.piece.nom,
+        '2': _format_value(mesure.temperature, ' C'),
+    })
+
+
+def send_twilio_whatsapp(message, mesure=None):
     if not all([
         settings.TWILIO_ACCOUNT_SID,
         settings.TWILIO_AUTH_TOKEN,
@@ -40,24 +48,32 @@ def send_twilio_whatsapp(message):
     ]):
         return False
 
+    data = {
+        'From': settings.TWILIO_WHATSAPP_FROM,
+        'To': f'whatsapp:{settings.WHATSAPP_PHONE}',
+    }
+
+    if settings.TWILIO_CONTENT_SID:
+        data['ContentSid'] = settings.TWILIO_CONTENT_SID
+        if mesure is not None:
+            data['ContentVariables'] = build_twilio_content_variables(mesure)
+    else:
+        data['Body'] = message
+
     try:
         response = requests.post(
             (
                 'https://api.twilio.com/2010-04-01/Accounts/'
                 f'{settings.TWILIO_ACCOUNT_SID}/Messages.json'
             ),
-            data={
-                'Body': message,
-                'From': settings.TWILIO_WHATSAPP_FROM,
-                'To': f'whatsapp:{settings.WHATSAPP_PHONE}',
-            },
+            data=data,
             auth=(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN),
             timeout=10,
         )
         response.raise_for_status()
         logger.info('Alerte WhatsApp envoyee avec Twilio.')
         return True
-    except requests.RequestException:
+    except Exception:
         logger.exception('Erreur pendant l envoi de l alerte WhatsApp avec Twilio.')
         return False
 
@@ -92,11 +108,15 @@ def send_temperature_alert(mesure, previous_mesure=None):
 
     message = build_temperature_alert_message(mesure)
 
-    if send_twilio_whatsapp(message):
-        return True
+    try:
+        if send_twilio_whatsapp(message, mesure):
+            return True
 
-    if send_callmebot_whatsapp(message):
-        return True
+        if send_callmebot_whatsapp(message):
+            return True
 
-    logger.warning('Alerte WhatsApp ignoree: aucun fournisseur WhatsApp configure.')
-    return False
+        logger.warning('Alerte WhatsApp ignoree: aucun fournisseur WhatsApp configure.')
+        return False
+    except Exception:
+        logger.exception('Erreur inattendue pendant le traitement de l alerte WhatsApp.')
+        return False
