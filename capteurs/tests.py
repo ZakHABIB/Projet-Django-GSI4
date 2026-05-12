@@ -64,6 +64,9 @@ class DHT11ApiTests(TestCase):
         self.assertEqual(Mesure.objects.count(), 1)
 
     @override_settings(
+        TWILIO_ACCOUNT_SID='',
+        TWILIO_AUTH_TOKEN='',
+        TWILIO_WHATSAPP_FROM='',
         CALLMEBOT_API_KEY='test-key',
         WHATSAPP_PHONE='+212706199603',
         TEMPERATURE_ALERT_THRESHOLD=30,
@@ -92,7 +95,13 @@ class DHT11ApiTests(TestCase):
         self.assertIn('Salon', params['text'])
         self.assertIn('31.0 C', params['text'])
 
-    @override_settings(CALLMEBOT_API_KEY='test-key', TEMPERATURE_ALERT_THRESHOLD=30)
+    @override_settings(
+        TWILIO_ACCOUNT_SID='',
+        TWILIO_AUTH_TOKEN='',
+        TWILIO_WHATSAPP_FROM='',
+        CALLMEBOT_API_KEY='test-key',
+        TEMPERATURE_ALERT_THRESHOLD=30,
+    )
     @patch('capteurs.alerts.requests.get')
     def test_whatsapp_alert_is_not_repeated_while_temperature_stays_high(self, mock_get):
         mock_get.return_value.raise_for_status.return_value = None
@@ -109,3 +118,27 @@ class DHT11ApiTests(TestCase):
         )
 
         self.assertEqual(mock_get.call_count, 1)
+
+    @override_settings(
+        TWILIO_ACCOUNT_SID='AC123',
+        TWILIO_AUTH_TOKEN='token',
+        TWILIO_WHATSAPP_FROM='whatsapp:+14155238886',
+        WHATSAPP_PHONE='+212706199603',
+        TEMPERATURE_ALERT_THRESHOLD=30,
+        CALLMEBOT_API_KEY='VOTRE_CLE_API',
+    )
+    @patch('capteurs.alerts.Client')
+    def test_twilio_whatsapp_alert_is_sent_when_configured(self, mock_client):
+        response = self.client.post(
+            '/api/add/',
+            data=json.dumps({'piece': 'Salon', 'temperature': 31, 'humidite': 52}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        mock_client.assert_called_once_with('AC123', 'token')
+        mock_client.return_value.messages.create.assert_called_once()
+        kwargs = mock_client.return_value.messages.create.call_args.kwargs
+        self.assertEqual(kwargs['from_'], 'whatsapp:+14155238886')
+        self.assertEqual(kwargs['to'], 'whatsapp:+212706199603')
+        self.assertIn('Salon', kwargs['body'])
