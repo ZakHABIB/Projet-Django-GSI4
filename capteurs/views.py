@@ -55,6 +55,8 @@ def dashboard(request):
         'total_mesures': Mesure.objects.count(),
         'chart_labels': chart_labels,
         'chart_data': chart_data,
+        'chart_labels_json': json.dumps(chart_labels),
+        'chart_data_json': json.dumps(chart_data),
     }
 
     return render(request, 'capteurs/dashboard.html', context)
