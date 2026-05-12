@@ -1,6 +1,7 @@
 import json
+from unittest.mock import patch
 
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 
 from .models import DHT11, Mesure, Piece
 
@@ -61,3 +62,50 @@ class DHT11ApiTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(DHT11.objects.count(), 1)
         self.assertEqual(Mesure.objects.count(), 1)
+
+    @override_settings(
+        CALLMEBOT_API_KEY='test-key',
+        WHATSAPP_PHONE='+212706199603',
+        TEMPERATURE_ALERT_THRESHOLD=30,
+    )
+    @patch('capteurs.alerts.requests.get')
+    def test_whatsapp_alert_is_sent_when_temperature_crosses_threshold(self, mock_get):
+        mock_get.return_value.raise_for_status.return_value = None
+
+        self.client.post(
+            '/api/add/',
+            data=json.dumps({'piece': 'Salon', 'temperature': 29, 'humidite': 50}),
+            content_type='application/json',
+        )
+        self.assertFalse(mock_get.called)
+
+        response = self.client.post(
+            '/api/add/',
+            data=json.dumps({'piece': 'Salon', 'temperature': 31, 'humidite': 52}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(mock_get.call_count, 1)
+        params = mock_get.call_args.kwargs['params']
+        self.assertEqual(params['phone'], '+212706199603')
+        self.assertIn('Salon', params['text'])
+        self.assertIn('31.0 C', params['text'])
+
+    @override_settings(CALLMEBOT_API_KEY='test-key', TEMPERATURE_ALERT_THRESHOLD=30)
+    @patch('capteurs.alerts.requests.get')
+    def test_whatsapp_alert_is_not_repeated_while_temperature_stays_high(self, mock_get):
+        mock_get.return_value.raise_for_status.return_value = None
+
+        self.client.post(
+            '/api/add/',
+            data=json.dumps({'piece': 'Salon', 'temperature': 31, 'humidite': 52}),
+            content_type='application/json',
+        )
+        self.client.post(
+            '/api/add/',
+            data=json.dumps({'piece': 'Salon', 'temperature': 32, 'humidite': 53}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(mock_get.call_count, 1)

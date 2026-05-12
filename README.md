@@ -28,6 +28,21 @@ curl -X POST http://127.0.0.1:8000/api/add/ -H "Content-Type: application/json" 
 - Guide de deploiement: `docs/PYTHONANYWHERE.md`
 - Sketch Arduino ESP8266: `arduino/projet_iot_esp8266/projet_iot_esp8266.ino`
 
+## Alerte WhatsApp
+
+Le serveur peut envoyer une alerte WhatsApp quand la temperature passe au-dessus du seuil.
+Numero configure par defaut: `+212706199603`.
+
+Variables utiles sur PythonAnywhere:
+
+```bash
+export WHATSAPP_PHONE="+212706199603"
+export TEMPERATURE_ALERT_THRESHOLD="30"
+export CALLMEBOT_API_KEY="VOTRE_CLE_API_CALLMEBOT"
+```
+
+Il faut activer CallMeBot pour ce numero et remplacer `CALLMEBOT_API_KEY` par la cle recue.
+
 ## Lancer le projet
 
 ```bash

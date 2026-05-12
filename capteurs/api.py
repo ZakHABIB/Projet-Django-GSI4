@@ -6,17 +6,21 @@ from django.views.decorators.csrf import csrf_exempt
 
 from .models import DHT11, Mesure, Piece
 from .serializers import DHT11Serializer
+from .alerts import send_temperature_alert
 
 
 def sync_mesure_from_dht11(dht11):
     piece_nom = getattr(dht11, 'piece_nom', 'DHT11') or 'DHT11'
     piece, _ = Piece.objects.get_or_create(nom=piece_nom)
-    Mesure.objects.create(
+    previous_mesure = Mesure.objects.filter(piece=piece).order_by('-timestamp').first()
+    mesure = Mesure.objects.create(
         piece=piece,
         temperature=dht11.temperature,
         humidite=dht11.humidite,
         timestamp=dht11.date,
     )
+    send_temperature_alert(mesure, previous_mesure)
+    return mesure
 
 
 @api_view(['GET'])

@@ -179,20 +179,8 @@ def recevoir_mesure(request):
             temperature=data.get('temperature'),
             humidite=data.get('humidite'),
         )
-        sync_mesure_from_dht11(dht11)
-
-        piece_nom = data.get('piece')
-        if not piece_nom or piece_nom == 'DHT11':
-            return JsonResponse({'status': 'ok', 'id': dht11.id})
-
-        piece, _ = Piece.objects.get_or_create(nom=piece_nom)
-
-        mesure = Mesure.objects.create(
-            piece=piece,
-            temperature=data.get('temperature'),
-            humidite=data.get('humidite'),
-            timestamp=timezone.now(),
-        )
+        dht11.piece_nom = data.get('piece') or 'DHT11'
+        mesure = sync_mesure_from_dht11(dht11)
 
         return JsonResponse({'status': 'ok', 'id': dht11.id, 'mesure_id': mesure.id})
     except Exception as exc:
