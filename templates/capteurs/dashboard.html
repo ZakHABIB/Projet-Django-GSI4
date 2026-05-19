@@ -952,7 +952,14 @@
                 </div>
                 <div class="live-meta">
                     <span><i class="fas fa-location-dot"></i> {{ derniere_mesure_globale.piece_display|default:"Aucune zone" }}</span>
-                    <span><i class="fas fa-clock"></i> {{ derniere_mesure_globale.timestamp|timesince|default:"--" }}</span>
+                    <span>
+                        <i class="fas fa-calendar-clock"></i>
+                        {% if derniere_mesure_globale %}
+                            {{ derniere_mesure_globale.timestamp|date:"d/m/Y" }} a {{ derniere_mesure_globale.timestamp|time:"H:i:s" }}
+                        {% else %}
+                            --/--/---- a --:--:--
+                        {% endif %}
+                    </span>
                 </div>
             </article>
 
@@ -1018,8 +1025,8 @@
             <article class="panel weather-card">
                 <div class="weather-top">
                     <div>
-                        <h2 class="panel-title"><i class="fas fa-user-doctor"></i> Confort clinique & IA</h2>
-                        <p class="panel-subtitle" style="color: rgba(255,255,255,0.78);">Indice environnement des blocs</p>
+                        <h2 class="panel-title"><i class="fas fa-cloud-sun"></i> Meteo Oujda</h2>
+                        <p class="panel-subtitle" style="color: rgba(255,255,255,0.78);">Donnees meteo en temps reel</p>
                         <div class="weather-temp" id="weather-temp">--&deg;C</div>
                         <div id="weather-desc">Chargement...</div>
                     </div>
@@ -1035,8 +1042,8 @@
                 </div>
 
                 <div class="prediction">
-                    <strong><i class="fas fa-robot"></i> Estimation IA</strong>
-                    <div id="ia-prediction">Temperature dans 1h: <strong>--&deg;C</strong></div>
+                    <strong><i class="fas fa-location-crosshairs"></i> Ville suivie</strong>
+                    <div id="ia-prediction">Oujda, Maroc</div>
                 </div>
             </article>
         </section>
@@ -1292,16 +1299,85 @@
         }
 
         async function getWeather() {
-            document.getElementById('weather-temp').innerHTML = '22&deg;C';
-            document.getElementById('weather-desc').textContent = 'Zone stable';
-            document.getElementById('weather-icon').innerHTML = '<i class="fas fa-kit-medical"></i>';
-            document.getElementById('weather-wind').textContent = 'Flux stable';
-            document.getElementById('weather-hum').textContent = '65%';
-            document.getElementById('weather-pressure').textContent = '1013 hPa';
+            const tempEl = document.getElementById('weather-temp');
+            const descEl = document.getElementById('weather-desc');
+            const iconEl = document.getElementById('weather-icon');
+            const windEl = document.getElementById('weather-wind');
+            const humEl = document.getElementById('weather-hum');
+            const pressureEl = document.getElementById('weather-pressure');
+            const cityEl = document.getElementById('ia-prediction');
 
-            const prediction = (21 + Math.random() * 3).toFixed(1);
-            document.getElementById('ia-prediction').innerHTML =
-                `Temperature dans 1h: <strong>${prediction}&deg;C</strong>`;
+            try {
+                const url = 'https://api.open-meteo.com/v1/forecast?latitude=34.6814&longitude=-1.9086&current=temperature_2m,relative_humidity_2m,wind_speed_10m,pressure_msl,weather_code&timezone=Africa%2FCasablanca';
+                const response = await fetch(url, { cache: 'no-store' });
+                if (!response.ok) throw new Error('Meteo indisponible');
+
+                const data = await response.json();
+                const current = data.current || {};
+                const weatherText = weatherCodeLabel(current.weather_code);
+
+                tempEl.innerHTML = `${formatNumber(current.temperature_2m)}&deg;C`;
+                descEl.textContent = weatherText;
+                iconEl.innerHTML = weatherIcon(current.weather_code);
+                windEl.textContent = `${formatNumber(current.wind_speed_10m)} km/h`;
+                humEl.textContent = `${formatNumber(current.relative_humidity_2m)}%`;
+                pressureEl.textContent = `${formatNumber(current.pressure_msl)} hPa`;
+                cityEl.innerHTML = `Oujda, Maroc - mise a jour ${formatWeatherTime(current.time)}`;
+            } catch (error) {
+                tempEl.innerHTML = '--&deg;C';
+                descEl.textContent = 'Meteo Oujda indisponible';
+                iconEl.innerHTML = '<i class="fas fa-triangle-exclamation"></i>';
+                windEl.textContent = '-- km/h';
+                humEl.textContent = '--%';
+                pressureEl.textContent = '-- hPa';
+                cityEl.textContent = 'Verifier la connexion meteo';
+            }
+        }
+
+        function formatNumber(value) {
+            if (value === null || value === undefined || Number.isNaN(Number(value))) {
+                return '--';
+            }
+            return Number(value).toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+        }
+
+        function formatWeatherTime(value) {
+            if (!value) return '--:--';
+            return new Date(value).toLocaleTimeString('fr-FR', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function weatherCodeLabel(code) {
+            const labels = {
+                0: 'Ciel clair',
+                1: 'Principalement clair',
+                2: 'Partiellement nuageux',
+                3: 'Couvert',
+                45: 'Brouillard',
+                48: 'Brouillard givrant',
+                51: 'Bruine legere',
+                53: 'Bruine moderee',
+                55: 'Bruine dense',
+                61: 'Pluie faible',
+                63: 'Pluie moderee',
+                65: 'Pluie forte',
+                80: 'Averses faibles',
+                81: 'Averses moderees',
+                82: 'Averses fortes',
+                95: 'Orage'
+            };
+            return labels[code] || 'Conditions variables';
+        }
+
+        function weatherIcon(code) {
+            if ([0, 1].includes(code)) return '<i class="fas fa-sun"></i>';
+            if ([2, 3].includes(code)) return '<i class="fas fa-cloud-sun"></i>';
+            if ([45, 48].includes(code)) return '<i class="fas fa-smog"></i>';
+            if ([51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code)) return '<i class="fas fa-cloud-rain"></i>';
+            if (code === 95) return '<i class="fas fa-cloud-bolt"></i>';
+            return '<i class="fas fa-cloud-sun"></i>';
         }
 
         function enableAutoReload() {
