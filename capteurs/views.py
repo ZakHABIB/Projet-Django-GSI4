@@ -108,6 +108,7 @@ def dashboard(request):
 
     chart_mesures = _sample_for_chart(list(periode_stats.order_by('timestamp')))
     chart_labels = [mesure.timestamp.strftime('%d/%m %H:%M') for mesure in chart_mesures]
+    chart_categories = [mesure.timestamp.isoformat() for mesure in chart_mesures]
     chart_temperature = [mesure.temperature for mesure in chart_mesures]
     chart_humidite = [mesure.humidite for mesure in chart_mesures]
 
@@ -130,6 +131,7 @@ def dashboard(request):
         'filtered_total': periode_stats.count(),
         'chart_labels': chart_labels,
         'chart_labels_json': json.dumps(chart_labels),
+        'chart_categories_json': json.dumps(chart_categories),
         'chart_temperature_json': json.dumps(chart_temperature),
         'chart_humidite_json': json.dumps(chart_humidite),
         'query_string': request.GET.urlencode(),

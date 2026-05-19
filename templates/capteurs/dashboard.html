@@ -7,7 +7,7 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
     <style>
         :root {
@@ -1017,9 +1017,7 @@
                         <button class="period-btn" type="button" onclick="document.getElementById('date_debut').focus()">Filtrer</button>
                     </div>
                 </div>
-                <div class="chart-wrap">
-                    <canvas id="temperatureChart"></canvas>
-                </div>
+                <div class="chart-wrap" id="temperatureChart"></div>
             </article>
 
             <article class="panel weather-card">
@@ -1056,9 +1054,7 @@
                 </div>
                 <span class="status-pill">{{ filtered_total }} points</span>
             </div>
-            <div class="chart-wrap">
-                <canvas id="humidityChart"></canvas>
-            </div>
+            <div class="chart-wrap" id="humidityChart"></div>
         </section>
 
         <section class="panel" style="margin-top: 16px;">
@@ -1206,10 +1202,12 @@
                 const gridColor = mode === 'dark' ? 'rgba(248,250,252,0.12)' : 'rgba(15,23,42,0.08)';
                 const tickColor = mode === 'dark' ? '#bac6d6' : '#667085';
                 window.charts.forEach(chart => {
-                    chart.options.scales.y.grid.color = gridColor;
-                    chart.options.scales.y.ticks.color = tickColor;
-                    chart.options.scales.x.ticks.color = tickColor;
-                    chart.update();
+                    chart.updateOptions({
+                        theme: { mode: mode === 'dark' ? 'dark' : 'light' },
+                        grid: { borderColor: gridColor },
+                        xaxis: { labels: { style: { colors: tickColor } } },
+                        yaxis: { labels: { style: { colors: tickColor } } }
+                    });
                 });
             }
         }
@@ -1219,82 +1217,107 @@
             document.getElementById('live-time').textContent = now.toLocaleTimeString('fr-FR');
         }
 
-        function createLineChart(canvasId, labels, data, options) {
-            const canvas = document.getElementById(canvasId);
-            if (!canvas) return;
+        function createAreaChart(selector, categories, series, colors, units) {
+            const element = document.querySelector(selector);
+            if (!element) return null;
 
             const isDark = document.body.classList.contains('dark-mode');
             const tickColor = isDark ? '#bac6d6' : '#667085';
             const gridColor = isDark ? 'rgba(248,250,252,0.12)' : 'rgba(15,23,42,0.08)';
 
-            return new Chart(canvas.getContext('2d'), {
-                type: 'line',
-                data: {
-                    labels,
-                    datasets: [{
-                        label: options.label,
-                        data,
-                        borderColor: options.color,
-                        backgroundColor: options.fill,
-                        borderWidth: 3,
-                        pointRadius: 4,
-                        pointBackgroundColor: options.color,
-                        pointBorderColor: '#ffffff',
-                        pointBorderWidth: 2,
-                        tension: 0.35,
-                        fill: true
-                    }]
+            const chart = new ApexCharts(element, {
+                series,
+                chart: {
+                    height: 300,
+                    type: 'area',
+                    toolbar: { show: false },
+                    zoom: { enabled: false },
+                    foreColor: tickColor
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            callbacks: {
-                                label: context => context.parsed.y + options.unit
-                            }
-                        }
+                colors,
+                dataLabels: {
+                    enabled: false
+                },
+                stroke: {
+                    curve: 'smooth',
+                    width: 3
+                },
+                fill: {
+                    type: 'gradient',
+                    gradient: {
+                        shadeIntensity: 0.35,
+                        opacityFrom: 0.42,
+                        opacityTo: 0.04,
+                        stops: [0, 90, 100]
+                    }
+                },
+                grid: {
+                    borderColor: gridColor,
+                    strokeDashArray: 4
+                },
+                markers: {
+                    size: 3,
+                    strokeWidth: 2,
+                    hover: { size: 6 }
+                },
+                legend: {
+                    position: 'top',
+                    horizontalAlign: 'right',
+                    fontWeight: 700
+                },
+                xaxis: {
+                    type: 'datetime',
+                    categories,
+                    labels: {
+                        style: { colors: tickColor },
+                        datetimeUTC: false
+                    }
+                },
+                yaxis: {
+                    labels: {
+                        style: { colors: tickColor },
+                        formatter: value => formatNumber(value)
+                    }
+                },
+                tooltip: {
+                    x: {
+                        format: 'dd/MM/yy HH:mm'
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            ticks: { color: tickColor },
-                            grid: { color: gridColor }
-                        },
-                        x: {
-                            ticks: { color: tickColor },
-                            grid: { display: false }
+                    y: {
+                        formatter: function(value, options) {
+                            const unit = units[options.seriesIndex] || '';
+                            return `${formatNumber(value)} ${unit}`;
                         }
                     }
+                },
+                theme: {
+                    mode: isDark ? 'dark' : 'light'
                 }
             });
+
+            chart.render();
+            return chart;
         }
 
         function initCharts() {
-            let labels = {{ chart_labels_json|safe }};
+            let categories = {{ chart_categories_json|safe }};
             let temperatureData = {{ chart_temperature_json|safe }};
             let humidityData = {{ chart_humidite_json|safe }};
 
-            if (!labels.length) {
-                labels = ['Aucune donnee'];
+            if (!categories.length) {
+                categories = [new Date().toISOString()];
                 temperatureData = [0];
                 humidityData = [0];
             }
 
             window.charts = [
-                createLineChart('temperatureChart', labels, temperatureData, {
-                    label: 'Temperature',
-                    color: '#ef4444',
-                    fill: 'rgba(239, 68, 68, 0.12)',
-                    unit: ' deg C'
-                }),
-                createLineChart('humidityChart', labels, humidityData, {
-                    label: 'Humidite',
-                    color: '#0891b2',
-                    fill: 'rgba(8, 145, 178, 0.12)',
-                    unit: ' %'
-                })
+                createAreaChart('#temperatureChart', categories, [
+                    { name: 'Temperature', data: temperatureData },
+                    { name: 'Humidite', data: humidityData }
+                ], ['#d91f45', '#009c9c'], ['deg C', '%']),
+                createAreaChart('#humidityChart', categories, [
+                    { name: 'Humidite', data: humidityData }
+                ], ['#009c9c'], ['%'])
             ].filter(Boolean);
         }
 
