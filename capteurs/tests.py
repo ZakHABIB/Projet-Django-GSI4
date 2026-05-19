@@ -72,7 +72,7 @@ class DHT11ApiTests(TestCase):
 
         dashboard_response = self.client.get('/', {'piece': salon.id})
         self.assertEqual(dashboard_response.status_code, 200)
-        self.assertContains(dashboard_response, 'Detail des mesures')
+        self.assertContains(dashboard_response, 'Registre des mesures')
         self.assertContains(dashboard_response, '1 resultats')
 
         export_response = self.client.get('/export-excel/', {'piece': salon.id})
