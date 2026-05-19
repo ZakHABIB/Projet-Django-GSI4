@@ -324,6 +324,85 @@
             color: var(--primary);
         }
 
+        .live-overview {
+            display: grid;
+            grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(180px, 0.7fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        .live-card {
+            position: relative;
+            overflow: hidden;
+            padding: 24px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.72);
+            background:
+                linear-gradient(135deg, rgba(14, 46, 68, 0.98), rgba(0, 106, 142, 0.94)),
+                var(--navy);
+            color: #fff;
+            box-shadow: var(--shadow);
+        }
+
+        .live-card::after {
+            content: "";
+            position: absolute;
+            right: -80px;
+            top: -80px;
+            width: 210px;
+            height: 210px;
+            border-radius: 50%;
+            border: 36px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .live-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255, 255, 255, 0.78);
+            font-size: 13px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .live-temp {
+            margin-top: 14px;
+            font-size: 64px;
+            line-height: 1;
+            font-weight: 800;
+            letter-spacing: 0;
+        }
+
+        .live-meta {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            color: rgba(255, 255, 255, 0.84);
+            font-weight: 700;
+        }
+
+        .live-mini {
+            padding: 20px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.96);
+            box-shadow: var(--shadow);
+        }
+
+        .live-mini span {
+            display: block;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .live-mini strong {
+            font-size: 34px;
+            line-height: 1;
+        }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -709,6 +788,10 @@
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
+            .live-overview {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
             .main-grid {
                 grid-template-columns: 1fr;
             }
@@ -741,10 +824,15 @@
 
             .stats-grid,
             .filters-form,
+            .live-overview,
             .details-grid,
             .room-values,
             .weather-detail {
                 grid-template-columns: 1fr;
+            }
+
+            .live-temp {
+                font-size: 48px;
             }
 
             .metric-value {
@@ -854,6 +942,34 @@
                     </a>
                 </div>
             </form>
+        </section>
+
+        <section class="live-overview" aria-label="Temperature en temps reel">
+            <article class="live-card">
+                <div class="live-label"><i class="fas fa-temperature-half"></i> Temperature en temps reel</div>
+                <div class="live-temp">
+                    {{ derniere_mesure_globale.temperature|floatformat:"1"|default:"--" }}&deg;C
+                </div>
+                <div class="live-meta">
+                    <span><i class="fas fa-location-dot"></i> {{ derniere_mesure_globale.piece_display|default:"Aucune zone" }}</span>
+                    <span><i class="fas fa-clock"></i> {{ derniere_mesure_globale.timestamp|timesince|default:"--" }}</span>
+                </div>
+            </article>
+
+            <article class="live-mini">
+                <span><i class="fas fa-droplet"></i> Humidite actuelle</span>
+                <strong class="hum-value">{{ derniere_mesure_globale.humidite|floatformat:"1"|default:"--" }}%</strong>
+            </article>
+
+            <article class="live-mini">
+                <span><i class="fas fa-database"></i> Mesures filtrees</span>
+                <strong>{{ filtered_total }}</strong>
+            </article>
+
+            <article class="live-mini">
+                <span><i class="fas fa-rotate"></i> Actualisation</span>
+                <strong>30s</strong>
+            </article>
         </section>
 
         <section class="stats-grid" aria-label="Statistiques">

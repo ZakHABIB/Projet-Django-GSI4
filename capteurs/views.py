@@ -115,11 +115,16 @@ def dashboard(request):
     for mesure in mesures_recentes:
         mesure.piece_display = _display_piece_name(mesure.piece)
 
+    derniere_mesure_globale = Mesure.objects.select_related('piece').order_by('-timestamp').first()
+    if derniere_mesure_globale:
+        derniere_mesure_globale.piece_display = _display_piece_name(derniere_mesure_globale.piece)
+
     context = {
         'pieces': pieces,
         'filters': filters,
         'dernieres_mesures': dernieres_mesures,
         'mesures_recentes': mesures_recentes,
+        'derniere_mesure_globale': derniere_mesure_globale,
         'stats': stats,
         'total_mesures': Mesure.objects.count(),
         'filtered_total': periode_stats.count(),
