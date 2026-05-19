@@ -64,6 +64,24 @@ class DHT11ApiTests(TestCase):
         self.assertEqual(DHT11.objects.count(), 1)
         self.assertEqual(Mesure.objects.count(), 1)
 
+    def test_dashboard_filters_and_excel_export(self):
+        salon = Piece.objects.create(nom='Salon')
+        cuisine = Piece.objects.create(nom='Cuisine')
+        Mesure.objects.create(piece=salon, temperature=31, humidite=55)
+        Mesure.objects.create(piece=cuisine, temperature=22, humidite=60)
+
+        dashboard_response = self.client.get('/', {'piece': salon.id})
+        self.assertEqual(dashboard_response.status_code, 200)
+        self.assertContains(dashboard_response, 'Detail des mesures')
+        self.assertContains(dashboard_response, '1 resultats')
+
+        export_response = self.client.get('/export-excel/', {'piece': salon.id})
+        self.assertEqual(export_response.status_code, 200)
+        self.assertIn('text/csv', export_response['Content-Type'])
+        content = export_response.content.decode('utf-8-sig')
+        self.assertIn('Salon', content)
+        self.assertNotIn('Cuisine', content)
+
     @override_settings(
         TELEGRAM_BOT_TOKEN='telegram-token',
         TELEGRAM_CHAT_ID='123456',

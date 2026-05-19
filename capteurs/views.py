@@ -1,5 +1,6 @@
 import json
 import logging
+import csv
 from datetime import datetime, timedelta
 
 from django.db.models import Avg, Max, Min
@@ -14,8 +15,57 @@ from .models import DHT11, Mesure, Piece
 logger = logging.getLogger(__name__)
 
 
+def _parse_filter_date(value, end_of_day=False):
+    if not value:
+        return None
+
+    try:
+        parsed = datetime.strptime(value, '%Y-%m-%d')
+    except ValueError:
+        return None
+
+    if end_of_day:
+        parsed = parsed.replace(hour=23, minute=59, second=59, microsecond=999999)
+    return timezone.make_aware(parsed)
+
+
+def _filtered_measure_queryset(request):
+    date_debut = request.GET.get('date_debut', '').strip()
+    date_fin = request.GET.get('date_fin', '').strip()
+    piece_id = request.GET.get('piece', '').strip()
+
+    queryset = Mesure.objects.select_related('piece').all()
+
+    start = _parse_filter_date(date_debut)
+    end = _parse_filter_date(date_fin, end_of_day=True)
+
+    if start:
+        queryset = queryset.filter(timestamp__gte=start)
+    if end:
+        queryset = queryset.filter(timestamp__lte=end)
+    if piece_id:
+        queryset = queryset.filter(piece_id=piece_id)
+
+    filters = {
+        'date_debut': date_debut,
+        'date_fin': date_fin,
+        'piece': piece_id,
+    }
+    return queryset, filters
+
+
+def _sample_for_chart(mesures, limit=60):
+    if len(mesures) <= limit:
+        return mesures
+
+    step = max(1, len(mesures) // limit)
+    sampled = mesures[::step]
+    return sampled[-limit:]
+
+
 def dashboard(request):
-    pieces = Piece.objects.all()
+    pieces = Piece.objects.all().order_by('nom')
+    mesures_filtrees, filters = _filtered_measure_queryset(request)
 
     dernieres_mesures = []
     for piece in pieces:
@@ -28,35 +78,40 @@ def dashboard(request):
                 'timestamp': derniere.timestamp,
             })
 
-    hier = timezone.now() - timedelta(hours=24)
-    stats = Mesure.objects.filter(timestamp__gte=hier).aggregate(
+    if not any(filters.values()):
+        periode_stats = mesures_filtrees.filter(timestamp__gte=timezone.now() - timedelta(hours=24))
+    else:
+        periode_stats = mesures_filtrees
+
+    stats = periode_stats.aggregate(
         temp_moy=Avg('temperature'),
         temp_max=Max('temperature'),
         temp_min=Min('temperature'),
         hum_moy=Avg('humidite'),
+        hum_max=Max('humidite'),
+        hum_min=Min('humidite'),
     )
 
-    mesures_24h = Mesure.objects.filter(timestamp__gte=hier).order_by('timestamp')
-    chart_labels = []
-    chart_data = []
+    chart_mesures = _sample_for_chart(list(periode_stats.order_by('timestamp')))
+    chart_labels = [mesure.timestamp.strftime('%d/%m %H:%M') for mesure in chart_mesures]
+    chart_temperature = [mesure.temperature for mesure in chart_mesures]
+    chart_humidite = [mesure.humidite for mesure in chart_mesures]
 
-    for compteur, mesure in enumerate(mesures_24h):
-        if compteur % 6 == 0:
-            chart_labels.append(mesure.timestamp.strftime('%H:%M'))
-            chart_data.append(mesure.temperature)
-
-    if len(chart_labels) > 12:
-        chart_labels = chart_labels[-12:]
-        chart_data = chart_data[-12:]
+    mesures_recentes = list(periode_stats.order_by('-timestamp')[:25])
 
     context = {
+        'pieces': pieces,
+        'filters': filters,
         'dernieres_mesures': dernieres_mesures,
+        'mesures_recentes': mesures_recentes,
         'stats': stats,
         'total_mesures': Mesure.objects.count(),
+        'filtered_total': periode_stats.count(),
         'chart_labels': chart_labels,
-        'chart_data': chart_data,
         'chart_labels_json': json.dumps(chart_labels),
-        'chart_data_json': json.dumps(chart_data),
+        'chart_temperature_json': json.dumps(chart_temperature),
+        'chart_humidite_json': json.dumps(chart_humidite),
+        'query_string': request.GET.urlencode(),
     }
 
     return render(request, 'capteurs/dashboard.html', context)
@@ -161,6 +216,37 @@ def export_pdf(request):
 
     response = HttpResponse(content, content_type='application/pdf')
     response['Content-Disposition'] = 'attachment; filename="rapport-iot.pdf"'
+    return response
+
+
+def export_excel(request):
+    mesures, filters = _filtered_measure_queryset(request)
+    if not any(filters.values()):
+        mesures = mesures.filter(timestamp__gte=timezone.now() - timedelta(hours=24))
+
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = 'attachment; filename="mesures-iot.csv"'
+    response.write('\ufeff')
+
+    writer = csv.writer(response, delimiter=';')
+    writer.writerow([
+        'Piece',
+        'Temperature (C)',
+        'Humidite (%)',
+        'Date',
+        'Heure',
+    ])
+
+    for mesure in mesures.order_by('-timestamp'):
+        local_time = timezone.localtime(mesure.timestamp)
+        writer.writerow([
+            mesure.piece.nom,
+            _format_stat(mesure.temperature),
+            _format_stat(mesure.humidite),
+            local_time.strftime('%d/%m/%Y'),
+            local_time.strftime('%H:%M:%S'),
+        ])
+
     return response
 
 

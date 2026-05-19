@@ -205,10 +205,80 @@
             color: #fff;
         }
 
+        .action-btn.excel {
+            background: var(--green);
+            border-color: var(--green);
+            color: #fff;
+            text-decoration: none;
+        }
+
         .action-btn.language {
             background: var(--primary);
             border-color: var(--primary);
             color: #fff;
+        }
+
+        .filters-panel {
+            margin-top: 16px;
+        }
+
+        .filters-form {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+            gap: 12px;
+            align-items: end;
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 6px;
+            color: var(--muted);
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .field input,
+        .field select {
+            width: 100%;
+            min-height: 42px;
+            padding: 0 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface-soft);
+            color: var(--text);
+            font: inherit;
+            font-weight: 600;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .filter-submit,
+        .filter-reset {
+            min-height: 42px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 0 14px;
+            border-radius: 8px;
+            border: 1px solid var(--primary);
+            font-weight: 800;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .filter-submit {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .filter-reset {
+            background: var(--surface-soft);
+            color: var(--primary);
         }
 
         .stats-grid {
@@ -397,6 +467,75 @@
             white-space: nowrap;
         }
 
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .detail-tile {
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--surface-soft);
+        }
+
+        .detail-tile span {
+            display: block;
+            color: var(--muted);
+            font-size: 12px;
+            font-weight: 800;
+            margin-bottom: 6px;
+        }
+
+        .detail-tile strong {
+            font-size: 22px;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+
+        .measure-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 760px;
+        }
+
+        .measure-table th,
+        .measure-table td {
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .measure-table th {
+            background: var(--surface-soft);
+            color: var(--muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0;
+        }
+
+        .measure-table tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 8px;
+            border-radius: 8px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border);
+            font-weight: 800;
+        }
+
         .section-heading {
             display: flex;
             align-items: center;
@@ -498,6 +637,10 @@
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
+            .filters-form {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
             .main-grid {
                 grid-template-columns: 1fr;
             }
@@ -529,6 +672,8 @@
             }
 
             .stats-grid,
+            .filters-form,
+            .details-grid,
             .room-values,
             .weather-detail {
                 grid-template-columns: 1fr;
@@ -578,6 +723,10 @@
             </div>
 
             <div class="actions">
+                <a class="action-btn excel" href="/export-excel/{% if query_string %}?{{ query_string }}{% endif %}">
+                    <i class="fas fa-file-excel"></i>
+                    <span>Export Excel</span>
+                </a>
                 <button class="action-btn pdf" type="button" onclick="exportPDF()">
                     <i class="fas fa-file-pdf"></i>
                     <span>Export PDF</span>
@@ -587,6 +736,51 @@
                     <span id="lang-btn">English</span>
                 </button>
             </div>
+        </section>
+
+        <section class="panel filters-panel" aria-label="Filtres des mesures">
+            <div class="panel-header">
+                <div>
+                    <h2 class="panel-title"><i class="fas fa-filter"></i> Filtrer les donnees</h2>
+                    <p class="panel-subtitle">Choisis une periode et une piece pour analyser les mesures utiles.</p>
+                </div>
+                <span class="status-pill">{{ filtered_total }} resultats</span>
+            </div>
+            <form class="filters-form" method="get">
+                <div class="field">
+                    <label for="date_debut">Date debut</label>
+                    <input id="date_debut" type="date" name="date_debut" value="{{ filters.date_debut }}">
+                </div>
+                <div class="field">
+                    <label for="date_fin">Date fin</label>
+                    <input id="date_fin" type="date" name="date_fin" value="{{ filters.date_fin }}">
+                </div>
+                <div class="field">
+                    <label for="piece">Piece</label>
+                    <select id="piece" name="piece">
+                        <option value="">Toutes les pieces</option>
+                        {% for piece in pieces %}
+                        <option value="{{ piece.id }}" {% if filters.piece == piece.id|stringformat:"s" %}selected{% endif %}>
+                            {{ piece.nom }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label>Periode affichee</label>
+                    <div class="badge"><i class="fas fa-calendar-days"></i> {% if query_string %}Filtree{% else %}Dernieres 24h{% endif %}</div>
+                </div>
+                <div class="filter-actions">
+                    <button class="filter-submit" type="submit">
+                        <i class="fas fa-magnifying-glass"></i>
+                        Filtrer
+                    </button>
+                    <a class="filter-reset" href="/">
+                        <i class="fas fa-rotate-left"></i>
+                        Reset
+                    </a>
+                </div>
+            </form>
         </section>
 
         <section class="stats-grid" aria-label="Statistiques">
@@ -620,12 +814,11 @@
                 <div class="panel-header">
                     <div>
                         <h2 class="panel-title"><i class="fas fa-chart-line"></i> Evolution temperature</h2>
-                        <p class="panel-subtitle">Historique des dernieres mesures recues</p>
+                        <p class="panel-subtitle">Courbe selon la periode selectionnee</p>
                     </div>
                     <div class="period-group">
-                        <button class="period-btn" type="button" onclick="updateChart('24h')">24h</button>
-                        <button class="period-btn" type="button" onclick="updateChart('7j')">7j</button>
-                        <button class="period-btn" type="button" onclick="updateChart('30j')">30j</button>
+                        <a class="period-btn" href="/" style="display:inline-flex;align-items:center;text-decoration:none;">24h</a>
+                        <button class="period-btn" type="button" onclick="document.getElementById('date_debut').focus()">Filtrer</button>
                     </div>
                 </div>
                 <div class="chart-wrap">
@@ -662,6 +855,19 @@
         <section class="panel" style="margin-top: 16px;">
             <div class="panel-header">
                 <div>
+                    <h2 class="panel-title"><i class="fas fa-chart-area"></i> Evolution humidite</h2>
+                    <p class="panel-subtitle">Suivi de l'humidite pour comparer avec la temperature.</p>
+                </div>
+                <span class="status-pill">{{ filtered_total }} points</span>
+            </div>
+            <div class="chart-wrap">
+                <canvas id="humidityChart"></canvas>
+            </div>
+        </section>
+
+        <section class="panel" style="margin-top: 16px;">
+            <div class="panel-header">
+                <div>
                     <h2 class="panel-title"><i class="fas fa-bell"></i> Alertes recentes</h2>
                     <p class="panel-subtitle">Etat operationnel du systeme IoT</p>
                 </div>
@@ -682,6 +888,69 @@
                     </div>
                     <small>30&deg;C</small>
                 </div>
+            </div>
+        </section>
+
+        <section class="panel" style="margin-top: 16px;">
+            <div class="panel-header">
+                <div>
+                    <h2 class="panel-title"><i class="fas fa-table"></i> Detail des mesures</h2>
+                    <p class="panel-subtitle">Les 25 dernieres lignes selon les filtres choisis.</p>
+                </div>
+                <a class="action-btn excel" href="/export-excel/{% if query_string %}?{{ query_string }}{% endif %}">
+                    <i class="fas fa-download"></i>
+                    Telecharger
+                </a>
+            </div>
+            <div class="details-grid">
+                <div class="detail-tile">
+                    <span>Total filtre</span>
+                    <strong>{{ filtered_total }}</strong>
+                </div>
+                <div class="detail-tile">
+                    <span>Humidite max</span>
+                    <strong>{{ stats.hum_max|floatformat:"1"|default:"--" }}%</strong>
+                </div>
+                <div class="detail-tile">
+                    <span>Humidite min</span>
+                    <strong>{{ stats.hum_min|floatformat:"1"|default:"--" }}%</strong>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table class="measure-table">
+                    <thead>
+                        <tr>
+                            <th>Piece</th>
+                            <th>Temperature</th>
+                            <th>Humidite</th>
+                            <th>Date</th>
+                            <th>Heure</th>
+                            <th>Etat</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for mesure in mesures_recentes %}
+                        <tr>
+                            <td><strong>{{ mesure.piece.nom }}</strong></td>
+                            <td><span class="temp-value">{{ mesure.temperature|floatformat:"1" }}&deg;C</span></td>
+                            <td><span class="hum-value">{{ mesure.humidite|floatformat:"1" }}%</span></td>
+                            <td>{{ mesure.timestamp|date:"d/m/Y" }}</td>
+                            <td>{{ mesure.timestamp|time:"H:i:s" }}</td>
+                            <td>
+                                {% if mesure.temperature and mesure.temperature >= 30 %}
+                                <span class="badge"><i class="fas fa-triangle-exclamation"></i> Chaud</span>
+                                {% else %}
+                                <span class="badge"><i class="fas fa-circle-check"></i> Normal</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6">Aucune mesure pour cette recherche.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </section>
 
@@ -737,13 +1006,15 @@
             body.classList.toggle('light-mode', mode !== 'dark');
             localStorage.setItem('theme', mode);
 
-            if (window.chart) {
+            if (window.charts) {
                 const gridColor = mode === 'dark' ? 'rgba(248,250,252,0.12)' : 'rgba(15,23,42,0.08)';
                 const tickColor = mode === 'dark' ? '#bac6d6' : '#667085';
-                window.chart.options.scales.y.grid.color = gridColor;
-                window.chart.options.scales.y.ticks.color = tickColor;
-                window.chart.options.scales.x.ticks.color = tickColor;
-                window.chart.update();
+                window.charts.forEach(chart => {
+                    chart.options.scales.y.grid.color = gridColor;
+                    chart.options.scales.y.ticks.color = tickColor;
+                    chart.options.scales.x.ticks.color = tickColor;
+                    chart.update();
+                });
             }
         }
 
@@ -752,34 +1023,26 @@
             document.getElementById('live-time').textContent = now.toLocaleTimeString('fr-FR');
         }
 
-        function initChart() {
-            const canvas = document.getElementById('temperatureChart');
+        function createLineChart(canvasId, labels, data, options) {
+            const canvas = document.getElementById(canvasId);
             if (!canvas) return;
-
-            let labels = {{ chart_labels_json|safe }};
-            let data = {{ chart_data_json|safe }};
-
-            if (!labels.length || !data.length) {
-                labels = ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'];
-                data = [16.5, 16.8, 16.4, 16.3, 16.2, 16.1];
-            }
 
             const isDark = document.body.classList.contains('dark-mode');
             const tickColor = isDark ? '#bac6d6' : '#667085';
             const gridColor = isDark ? 'rgba(248,250,252,0.12)' : 'rgba(15,23,42,0.08)';
 
-            window.chart = new Chart(canvas.getContext('2d'), {
+            return new Chart(canvas.getContext('2d'), {
                 type: 'line',
                 data: {
                     labels,
                     datasets: [{
-                        label: 'Temperature',
+                        label: options.label,
                         data,
-                        borderColor: '#2563eb',
-                        backgroundColor: 'rgba(37, 99, 235, 0.12)',
+                        borderColor: options.color,
+                        backgroundColor: options.fill,
                         borderWidth: 3,
                         pointRadius: 4,
-                        pointBackgroundColor: '#2563eb',
+                        pointBackgroundColor: options.color,
                         pointBorderColor: '#ffffff',
                         pointBorderWidth: 2,
                         tension: 0.35,
@@ -793,7 +1056,7 @@
                         legend: { display: false },
                         tooltip: {
                             callbacks: {
-                                label: context => context.parsed.y + ' deg C'
+                                label: context => context.parsed.y + options.unit
                             }
                         }
                     },
@@ -812,8 +1075,31 @@
             });
         }
 
-        function updateChart(period) {
-            alert('Chargement des donnees ' + period + ' a venir');
+        function initCharts() {
+            let labels = {{ chart_labels_json|safe }};
+            let temperatureData = {{ chart_temperature_json|safe }};
+            let humidityData = {{ chart_humidite_json|safe }};
+
+            if (!labels.length) {
+                labels = ['Aucune donnee'];
+                temperatureData = [0];
+                humidityData = [0];
+            }
+
+            window.charts = [
+                createLineChart('temperatureChart', labels, temperatureData, {
+                    label: 'Temperature',
+                    color: '#ef4444',
+                    fill: 'rgba(239, 68, 68, 0.12)',
+                    unit: ' deg C'
+                }),
+                createLineChart('humidityChart', labels, humidityData, {
+                    label: 'Humidite',
+                    color: '#0891b2',
+                    fill: 'rgba(8, 145, 178, 0.12)',
+                    unit: ' %'
+                })
+            ].filter(Boolean);
         }
 
         async function getWeather() {
@@ -852,7 +1138,7 @@
             setTheme(savedTheme);
             updateTime();
             setInterval(updateTime, 1000);
-            initChart();
+            initCharts();
             getWeather();
         });
     </script>
