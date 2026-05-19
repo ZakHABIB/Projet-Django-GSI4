@@ -14,6 +14,16 @@ from .models import DHT11, Mesure, Piece
 
 logger = logging.getLogger(__name__)
 
+PIECE_DISPLAY_NAMES = {
+    'DHT11': 'BLOC 1',
+    'Salon': 'BLOC OPERATOIRE',
+    'Cuisine': 'BLOC REANIMATION',
+}
+
+
+def _display_piece_name(piece):
+    return PIECE_DISPLAY_NAMES.get(piece.nom, piece.nom)
+
 
 def _parse_filter_date(value, end_of_day=False):
     if not value:
@@ -65,6 +75,9 @@ def _sample_for_chart(mesures, limit=60):
 
 def dashboard(request):
     pieces = Piece.objects.all().order_by('nom')
+    for piece in pieces:
+        piece.display_nom = _display_piece_name(piece)
+
     mesures_filtrees, filters = _filtered_measure_queryset(request)
 
     dernieres_mesures = []
@@ -73,6 +86,7 @@ def dashboard(request):
         if derniere:
             dernieres_mesures.append({
                 'piece': piece,
+                'piece_display': _display_piece_name(piece),
                 'temperature': derniere.temperature,
                 'humidite': derniere.humidite,
                 'timestamp': derniere.timestamp,
@@ -98,6 +112,8 @@ def dashboard(request):
     chart_humidite = [mesure.humidite for mesure in chart_mesures]
 
     mesures_recentes = list(periode_stats.order_by('-timestamp')[:25])
+    for mesure in mesures_recentes:
+        mesure.piece_display = _display_piece_name(mesure.piece)
 
     context = {
         'pieces': pieces,
@@ -240,7 +256,7 @@ def export_excel(request):
     for mesure in mesures.order_by('-timestamp'):
         local_time = timezone.localtime(mesure.timestamp)
         writer.writerow([
-            mesure.piece.nom,
+            _display_piece_name(mesure.piece),
             _format_stat(mesure.temperature),
             _format_stat(mesure.humidite),
             local_time.strftime('%d/%m/%Y'),

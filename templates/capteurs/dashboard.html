@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT Dashboard</title>
+    <title>Clinical IoT Control</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -11,22 +11,23 @@
 
     <style>
         :root {
-            --bg: #eef3f8;
+            --bg: #eaf4f7;
             --surface: #ffffff;
-            --surface-soft: #f7fafc;
-            --text: #172033;
-            --muted: #667085;
-            --border: #d8e0ea;
-            --primary: #2563eb;
-            --primary-soft: #dbeafe;
-            --teal: #0891b2;
+            --surface-soft: #f4fbfd;
+            --text: #102033;
+            --muted: #5e7185;
+            --border: #cfe0e8;
+            --primary: #0f766e;
+            --primary-soft: #ccfbf1;
+            --teal: #0284c7;
             --teal-soft: #cffafe;
-            --coral: #ef4444;
-            --coral-soft: #fee2e2;
-            --amber: #d97706;
-            --amber-soft: #fef3c7;
-            --green: #059669;
-            --shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+            --coral: #e11d48;
+            --coral-soft: #ffe4e6;
+            --amber: #ca8a04;
+            --amber-soft: #fef9c3;
+            --green: #047857;
+            --clinical: #155e75;
+            --shadow: 0 18px 45px rgba(8, 47, 73, 0.10);
         }
 
         body.dark-mode {
@@ -36,9 +37,9 @@
             --text: #f8fafc;
             --muted: #bac6d6;
             --border: #314159;
-            --primary: #60a5fa;
-            --primary-soft: rgba(96, 165, 250, 0.18);
-            --teal: #22d3ee;
+            --primary: #5eead4;
+            --primary-soft: rgba(94, 234, 212, 0.18);
+            --teal: #38bdf8;
             --teal-soft: rgba(34, 211, 238, 0.16);
             --coral: #fb7185;
             --coral-soft: rgba(251, 113, 133, 0.16);
@@ -55,7 +56,9 @@
         body {
             margin: 0;
             min-height: 100vh;
-            background: var(--bg);
+            background:
+                linear-gradient(135deg, rgba(20, 184, 166, 0.10), rgba(14, 165, 233, 0.08)),
+                var(--bg);
             color: var(--text);
             font-family: "Inter", Arial, sans-serif;
         }
@@ -75,8 +78,10 @@
             align-items: center;
             justify-content: space-between;
             gap: 18px;
-            padding: 18px 20px;
-            background: var(--surface);
+            padding: 20px;
+            background:
+                linear-gradient(135deg, rgba(15, 118, 110, 0.08), rgba(2, 132, 199, 0.08)),
+                var(--surface);
             border: 1px solid var(--border);
             border-radius: 8px;
             box-shadow: var(--shadow);
@@ -98,6 +103,17 @@
             background: var(--primary-soft);
             color: var(--primary);
             font-size: 24px;
+        }
+
+        .clinical-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 5px;
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 800;
+            text-transform: uppercase;
         }
 
         .brand h1 {
@@ -137,6 +153,10 @@
 
         .status-pill.online {
             color: var(--green);
+        }
+
+        .status-pill.refreshing {
+            color: var(--primary);
         }
 
         .toolbar {
@@ -689,10 +709,11 @@
     <main class="app-shell">
         <header class="topbar">
             <div class="brand">
-                <div class="brand-icon"><i class="fas fa-microchip"></i></div>
+                <div class="brand-icon"><i class="fas fa-hospital"></i></div>
                 <div>
-                    <h1 id="page-title">IoT Dashboard Pro</h1>
-                    <p>Monitoring temperature et humidite en temps reel</p>
+                    <span class="clinical-kicker"><i class="fas fa-shield-heart"></i> Clinique connectee</span>
+                    <h1 id="page-title">Clinical IoT Control</h1>
+                    <p>Supervision des blocs, temperature et humidite en temps reel</p>
                 </div>
             </div>
 
@@ -708,6 +729,10 @@
                 <div class="status-pill">
                     <i class="fas fa-clock"></i>
                     <span id="live-time"></span>
+                </div>
+                <div class="status-pill refreshing">
+                    <i class="fas fa-rotate"></i>
+                    <span>Reload 3s</span>
                 </div>
             </div>
         </header>
@@ -761,7 +786,7 @@
                         <option value="">Toutes les pieces</option>
                         {% for piece in pieces %}
                         <option value="{{ piece.id }}" {% if filters.piece == piece.id|stringformat:"s" %}selected{% endif %}>
-                            {{ piece.nom }}
+                            {{ piece.display_nom }}
                         </option>
                         {% endfor %}
                     </select>
@@ -829,8 +854,8 @@
             <article class="panel weather-card">
                 <div class="weather-top">
                     <div>
-                        <h2 class="panel-title"><i class="fas fa-cloud-sun"></i> Meteo & IA</h2>
-                        <p class="panel-subtitle" style="color: rgba(255,255,255,0.78);">Reference locale simulee</p>
+                        <h2 class="panel-title"><i class="fas fa-user-doctor"></i> Confort clinique & IA</h2>
+                        <p class="panel-subtitle" style="color: rgba(255,255,255,0.78);">Indice environnement des blocs</p>
                         <div class="weather-temp" id="weather-temp">--&deg;C</div>
                         <div id="weather-desc">Chargement...</div>
                     </div>
@@ -846,7 +871,7 @@
                 </div>
 
                 <div class="prediction">
-                    <strong><i class="fas fa-robot"></i> Prevision IA</strong>
+                    <strong><i class="fas fa-robot"></i> Estimation IA</strong>
                     <div id="ia-prediction">Temperature dans 1h: <strong>--&deg;C</strong></div>
                 </div>
             </article>
@@ -868,22 +893,22 @@
         <section class="panel" style="margin-top: 16px;">
             <div class="panel-header">
                 <div>
-                    <h2 class="panel-title"><i class="fas fa-bell"></i> Alertes recentes</h2>
-                    <p class="panel-subtitle">Etat operationnel du systeme IoT</p>
+                    <h2 class="panel-title"><i class="fas fa-bell"></i> Alertes cliniques</h2>
+                    <p class="panel-subtitle">Suivi des seuils pour les zones sensibles</p>
                 </div>
                 <span class="status-pill">2 alertes</span>
             </div>
             <div class="alerts-list">
                 <div class="alert-item">
                     <div>
-                        <strong><i class="fas fa-exclamation-triangle"></i> Surveillance capteur</strong>
-                        <span>Verifier la derniere mesure si le capteur ne repond plus.</span>
+                        <strong><i class="fas fa-exclamation-triangle"></i> Surveillance bloc</strong>
+                        <span>Verifier la derniere mesure si un capteur de bloc ne repond plus.</span>
                     </div>
                     <small>Auto</small>
                 </div>
                 <div class="alert-item">
                     <div>
-                        <strong><i class="fas fa-thermometer-half"></i> Seuil temperature</strong>
+                        <strong><i class="fas fa-thermometer-half"></i> Seuil temperature clinique</strong>
                         <span>Une alerte peut etre declenchee si la temperature depasse 30&deg;C.</span>
                     </div>
                     <small>30&deg;C</small>
@@ -931,7 +956,7 @@
                     <tbody>
                         {% for mesure in mesures_recentes %}
                         <tr>
-                            <td><strong>{{ mesure.piece.nom }}</strong></td>
+                            <td><strong>{{ mesure.piece_display }}</strong></td>
                             <td><span class="temp-value">{{ mesure.temperature|floatformat:"1" }}&deg;C</span></td>
                             <td><span class="hum-value">{{ mesure.humidite|floatformat:"1" }}%</span></td>
                             <td>{{ mesure.timestamp|date:"d/m/Y" }}</td>
@@ -955,7 +980,7 @@
         </section>
 
         <section class="section-heading">
-            <h2><i class="fas fa-home"></i> Mesures par piece</h2>
+            <h2><i class="fas fa-hospital-user"></i> Mesures par zone clinique</h2>
             <span>Derniere valeur connue</span>
         </section>
 
@@ -963,7 +988,7 @@
             {% for mesure in dernieres_mesures %}
             <article class="room-card">
                 <div class="room-header">
-                    <h3><i class="fas fa-location-dot"></i> {{ mesure.piece.nom }}</h3>
+                    <h3><i class="fas fa-bed-pulse"></i> {{ mesure.piece_display }}</h3>
                     <div class="room-status" aria-label="Capteur actif"></div>
                 </div>
                 <div class="room-values">
@@ -1104,15 +1129,30 @@
 
         async function getWeather() {
             document.getElementById('weather-temp').innerHTML = '22&deg;C';
-            document.getElementById('weather-desc').textContent = 'Partiellement nuageux';
-            document.getElementById('weather-icon').innerHTML = '<i class="fas fa-cloud-sun"></i>';
-            document.getElementById('weather-wind').textContent = '12 km/h';
+            document.getElementById('weather-desc').textContent = 'Zone stable';
+            document.getElementById('weather-icon').innerHTML = '<i class="fas fa-kit-medical"></i>';
+            document.getElementById('weather-wind').textContent = 'Flux stable';
             document.getElementById('weather-hum').textContent = '65%';
             document.getElementById('weather-pressure').textContent = '1013 hPa';
 
             const prediction = (21 + Math.random() * 3).toFixed(1);
             document.getElementById('ia-prediction').innerHTML =
                 `Temperature dans 1h: <strong>${prediction}&deg;C</strong>`;
+        }
+
+        function enableAutoReload() {
+            window.addEventListener('beforeunload', function() {
+                sessionStorage.setItem('dashboardScrollY', String(window.scrollY));
+            });
+
+            const savedScroll = sessionStorage.getItem('dashboardScrollY');
+            if (savedScroll !== null) {
+                window.scrollTo(0, Number(savedScroll));
+            }
+
+            setInterval(function() {
+                window.location.reload();
+            }, 3000);
         }
 
         function exportPDF() {
@@ -1125,11 +1165,11 @@
             if (currentLang === 'fr') {
                 currentLang = 'en';
                 btn.textContent = 'Francais';
-                document.getElementById('page-title').textContent = 'IoT Pro Dashboard';
+                document.getElementById('page-title').textContent = 'Clinical IoT Control';
             } else {
                 currentLang = 'fr';
                 btn.textContent = 'English';
-                document.getElementById('page-title').textContent = 'IoT Dashboard Pro';
+                document.getElementById('page-title').textContent = 'Clinical IoT Control';
             }
         }
 
@@ -1140,6 +1180,7 @@
             setInterval(updateTime, 1000);
             initCharts();
             getWeather();
+            enableAutoReload();
         });
     </script>
 </body>

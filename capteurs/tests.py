@@ -79,8 +79,8 @@ class DHT11ApiTests(TestCase):
         self.assertEqual(export_response.status_code, 200)
         self.assertIn('text/csv', export_response['Content-Type'])
         content = export_response.content.decode('utf-8-sig')
-        self.assertIn('Salon', content)
-        self.assertNotIn('Cuisine', content)
+        self.assertIn('BLOC OPERATOIRE', content)
+        self.assertNotIn('BLOC REANIMATION', content)
 
     @override_settings(
         TELEGRAM_BOT_TOKEN='telegram-token',
