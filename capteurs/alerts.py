@@ -33,6 +33,27 @@ def build_temperature_alert_message(mesure):
     )
 
 
+def send_telegram_alert(message):
+    if not settings.TELEGRAM_BOT_TOKEN or not settings.TELEGRAM_CHAT_ID:
+        return False
+
+    try:
+        response = requests.post(
+            f'https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/sendMessage',
+            data={
+                'chat_id': settings.TELEGRAM_CHAT_ID,
+                'text': message,
+            },
+            timeout=10,
+        )
+        response.raise_for_status()
+        logger.info('Alerte envoyee avec Telegram.')
+        return True
+    except Exception:
+        logger.exception('Erreur pendant l envoi de l alerte Telegram.')
+        return False
+
+
 def build_twilio_content_variables(mesure):
     return json.dumps({
         '1': mesure.piece.nom,
@@ -109,14 +130,17 @@ def send_temperature_alert(mesure, previous_mesure=None):
     message = build_temperature_alert_message(mesure)
 
     try:
+        if send_telegram_alert(message):
+            return True
+
         if send_twilio_whatsapp(message, mesure):
             return True
 
         if send_callmebot_whatsapp(message):
             return True
 
-        logger.warning('Alerte WhatsApp ignoree: aucun fournisseur WhatsApp configure.')
+        logger.warning('Alerte ignoree: aucun fournisseur de notification configure.')
         return False
     except Exception:
-        logger.exception('Erreur inattendue pendant le traitement de l alerte WhatsApp.')
+        logger.exception('Erreur inattendue pendant le traitement de l alerte.')
         return False

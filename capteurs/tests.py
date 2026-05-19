@@ -65,6 +65,40 @@ class DHT11ApiTests(TestCase):
         self.assertEqual(Mesure.objects.count(), 1)
 
     @override_settings(
+        TELEGRAM_BOT_TOKEN='telegram-token',
+        TELEGRAM_CHAT_ID='123456',
+        TWILIO_ACCOUNT_SID='',
+        TWILIO_AUTH_TOKEN='',
+        TWILIO_WHATSAPP_FROM='',
+        CALLMEBOT_API_KEY='VOTRE_CLE_API',
+        TEMPERATURE_ALERT_THRESHOLD=30,
+    )
+    @patch('capteurs.alerts.requests.post')
+    def test_telegram_alert_is_sent_when_temperature_crosses_threshold(self, mock_post):
+        mock_post.return_value.raise_for_status.return_value = None
+
+        self.client.post(
+            '/api/add/',
+            data=json.dumps({'piece': 'Salon', 'temperature': 29, 'humidite': 50}),
+            content_type='application/json',
+        )
+        self.assertFalse(mock_post.called)
+
+        response = self.client.post(
+            '/api/add/',
+            data=json.dumps({'piece': 'Salon', 'temperature': 31, 'humidite': 52}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        mock_post.assert_called_once()
+        args, kwargs = mock_post.call_args
+        self.assertEqual(args[0], 'https://api.telegram.org/bottelegram-token/sendMessage')
+        self.assertEqual(kwargs['data']['chat_id'], '123456')
+        self.assertIn('Salon', kwargs['data']['text'])
+        self.assertIn('31.0 C', kwargs['data']['text'])
+
+    @override_settings(
         TWILIO_ACCOUNT_SID='',
         TWILIO_AUTH_TOKEN='',
         TWILIO_WHATSAPP_FROM='',
