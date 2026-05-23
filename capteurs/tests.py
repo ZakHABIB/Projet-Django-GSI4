@@ -85,6 +85,7 @@ class DHT11ApiTests(TestCase):
     @override_settings(
         TELEGRAM_BOT_TOKEN='telegram-token',
         TELEGRAM_CHAT_ID='123456',
+        ALERT_EMAIL_TO=[],
         TWILIO_ACCOUNT_SID='',
         TWILIO_AUTH_TOKEN='',
         TWILIO_WHATSAPP_FROM='',
@@ -115,8 +116,45 @@ class DHT11ApiTests(TestCase):
         self.assertEqual(kwargs['data']['chat_id'], '123456')
         self.assertIn('Salon', kwargs['data']['text'])
         self.assertIn('31.0 C', kwargs['data']['text'])
+        self.assertIn('Agent IA', kwargs['data']['text'])
 
     @override_settings(
+        TELEGRAM_BOT_TOKEN='',
+        TELEGRAM_CHAT_ID='',
+        ALERT_EMAIL_TO=['admin@example.com'],
+        DEFAULT_FROM_EMAIL='iot@example.com',
+        TWILIO_ACCOUNT_SID='',
+        TWILIO_AUTH_TOKEN='',
+        TWILIO_WHATSAPP_FROM='',
+        CALLMEBOT_API_KEY='VOTRE_CLE_API',
+        TEMPERATURE_ALERT_THRESHOLD=26,
+    )
+    @patch('capteurs.alerts.send_mail')
+    def test_email_alert_is_sent_when_temperature_crosses_threshold(self, mock_send_mail):
+        mock_send_mail.return_value = 1
+
+        self.client.post(
+            '/api/add/',
+            data=json.dumps({'piece': 'BlocTest', 'temperature': 25, 'humidite': 50}),
+            content_type='application/json',
+        )
+        self.assertFalse(mock_send_mail.called)
+
+        response = self.client.post(
+            '/api/add/',
+            data=json.dumps({'piece': 'BlocTest', 'temperature': 27, 'humidite': 52}),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        mock_send_mail.assert_called_once()
+        kwargs = mock_send_mail.call_args.kwargs
+        self.assertEqual(kwargs['recipient_list'], ['admin@example.com'])
+        self.assertIn('27.0 C', kwargs['message'])
+        self.assertIn('Suggestion:', kwargs['message'])
+
+    @override_settings(
+        ALERT_EMAIL_TO=[],
         TWILIO_ACCOUNT_SID='',
         TWILIO_AUTH_TOKEN='',
         TWILIO_WHATSAPP_FROM='',
@@ -149,6 +187,7 @@ class DHT11ApiTests(TestCase):
         self.assertIn('31.0 C', params['text'])
 
     @override_settings(
+        ALERT_EMAIL_TO=[],
         TWILIO_ACCOUNT_SID='',
         TWILIO_AUTH_TOKEN='',
         TWILIO_WHATSAPP_FROM='',
@@ -173,6 +212,7 @@ class DHT11ApiTests(TestCase):
         self.assertEqual(mock_get.call_count, 1)
 
     @override_settings(
+        ALERT_EMAIL_TO=[],
         TWILIO_ACCOUNT_SID='AC123',
         TWILIO_AUTH_TOKEN='token',
         TWILIO_WHATSAPP_FROM='whatsapp:+14155238886',
@@ -199,6 +239,7 @@ class DHT11ApiTests(TestCase):
         self.assertIn('Salon', kwargs['data']['Body'])
 
     @override_settings(
+        ALERT_EMAIL_TO=[],
         TWILIO_ACCOUNT_SID='AC123',
         TWILIO_AUTH_TOKEN='token',
         TWILIO_WHATSAPP_FROM='whatsapp:+14155238886',
@@ -224,6 +265,7 @@ class DHT11ApiTests(TestCase):
         self.assertNotIn('Body', data)
 
     @override_settings(
+        ALERT_EMAIL_TO=[],
         TWILIO_ACCOUNT_SID='AC123',
         TWILIO_AUTH_TOKEN='token',
         TWILIO_WHATSAPP_FROM='whatsapp:+14155238886',

@@ -99,6 +99,17 @@ CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', CELERY_BROKER_UR
 
 TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '')
 TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '')
+ALERT_EMAIL_TO = [
+    email.strip()
+    for email in os.environ.get('ALERT_EMAIL_TO', '').split(',')
+    if email.strip()
+]
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() in ('1', 'true', 'yes', 'on')
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'iot-alerts@example.com')
 WHATSAPP_PHONE = os.environ.get('WHATSAPP_PHONE', '+212706199603')
 TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID', '')
 TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN', '')
@@ -109,4 +120,4 @@ CALLMEBOT_WHATSAPP_URL = os.environ.get(
     'CALLMEBOT_WHATSAPP_URL',
     'https://api.callmebot.com/whatsapp.php',
 )
-TEMPERATURE_ALERT_THRESHOLD = float(os.environ.get('TEMPERATURE_ALERT_THRESHOLD', '30'))
+TEMPERATURE_ALERT_THRESHOLD = float(os.environ.get('TEMPERATURE_ALERT_THRESHOLD', '26'))

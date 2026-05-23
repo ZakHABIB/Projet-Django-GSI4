@@ -3,6 +3,7 @@ import logging
 import csv
 from datetime import datetime, timedelta
 
+from django.conf import settings
 from django.db.models import Avg, Max, Min
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
@@ -10,6 +11,7 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 
 from .api import sync_mesure_from_dht11
+from .alerts import build_temperature_ai_report
 from .models import DHT11, Mesure, Piece
 
 logger = logging.getLogger(__name__)
@@ -117,8 +119,17 @@ def dashboard(request):
         mesure.piece_display = _display_piece_name(mesure.piece)
 
     derniere_mesure_globale = Mesure.objects.select_related('piece').order_by('-timestamp').first()
+    ai_report = None
     if derniere_mesure_globale:
         derniere_mesure_globale.piece_display = _display_piece_name(derniere_mesure_globale.piece)
+        previous_for_ai = (
+            Mesure.objects
+            .filter(piece=derniere_mesure_globale.piece)
+            .exclude(id=derniere_mesure_globale.id)
+            .order_by('-timestamp')
+            .first()
+        )
+        ai_report = build_temperature_ai_report(derniere_mesure_globale, previous_for_ai)
 
     context = {
         'pieces': pieces,
@@ -126,7 +137,9 @@ def dashboard(request):
         'dernieres_mesures': dernieres_mesures,
         'mesures_recentes': mesures_recentes,
         'derniere_mesure_globale': derniere_mesure_globale,
+        'ai_report': ai_report,
         'stats': stats,
+        'temperature_threshold': settings.TEMPERATURE_ALERT_THRESHOLD,
         'total_mesures': Mesure.objects.count(),
         'filtered_total': periode_stats.count(),
         'chart_labels': chart_labels,

@@ -868,7 +868,7 @@
                 </div>
                 <div class="status-pill refreshing">
                     <i class="fas fa-rotate"></i>
-                    <span>Reload 30s</span>
+                    <span>Reload 8s</span>
                 </div>
             </div>
         </header>
@@ -975,8 +975,32 @@
 
             <article class="live-mini">
                 <span><i class="fas fa-rotate"></i> Actualisation</span>
-                <strong>30s</strong>
+                <strong>8s</strong>
             </article>
+        </section>
+
+        <section class="panel" style="margin-top: 16px;">
+            <div class="panel-header">
+                <div>
+                    <h2 class="panel-title"><i class="fas fa-brain"></i> Agent IA environnement clinique</h2>
+                    <p class="panel-subtitle">Analyse automatique de la variation temperature/humidite et recommandations.</p>
+                </div>
+                <span class="status-pill">Seuil {{ temperature_threshold|floatformat:"0" }}&deg;C</span>
+            </div>
+            <div class="details-grid">
+                <div class="detail-tile">
+                    <span>Diagnostic IA</span>
+                    <strong style="font-size: 16px;">{{ ai_report.trend|default:"En attente de donnees." }}</strong>
+                </div>
+                <div class="detail-tile">
+                    <span>Suggestion</span>
+                    <strong style="font-size: 16px;">{{ ai_report.suggestion|default:"Aucune suggestion disponible." }}</strong>
+                </div>
+                <div class="detail-tile">
+                    <span>Notification</span>
+                    <strong style="font-size: 16px;">Telegram + Gmail si seuil depasse</strong>
+                </div>
+            </div>
         </section>
 
         <section class="stats-grid" aria-label="Statistiques">
@@ -1415,7 +1439,7 @@
 
             setInterval(function() {
                 window.location.reload();
-            }, 30000);
+            }, 8000);
         }
 
         function exportPDF() {
