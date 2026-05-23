@@ -11,25 +11,25 @@
 
     <style>
         :root {
-            --bg: #f4f8fb;
+            --bg: #f5f5f5;
             --surface: #ffffff;
-            --surface-soft: #f8fbfd;
-            --text: #12283a;
-            --muted: #667889;
-            --border: #dce8ef;
-            --primary: #006a8e;
-            --primary-soft: #dff3f8;
-            --teal: #009c9c;
-            --teal-soft: #ddf7f4;
+            --surface-soft: #f4f4f4;
+            --text: #171a20;
+            --muted: #5c5e62;
+            --border: #e2e3e3;
+            --primary: #171a20;
+            --primary-soft: #eeeeee;
+            --teal: #0a7cff;
+            --teal-soft: #e7f1ff;
             --coral: #d91f45;
             --coral-soft: #fde7ec;
-            --amber: #b88a36;
-            --amber-soft: #fff5df;
-            --green: #07815f;
-            --clinical: #0b3448;
-            --navy: #0e2e44;
-            --gold: #b9934a;
-            --shadow: 0 18px 45px rgba(9, 49, 70, 0.09);
+            --amber: #8e8e93;
+            --amber-soft: #f1f1f1;
+            --green: #16a34a;
+            --clinical: #171a20;
+            --navy: #111111;
+            --gold: #a0a0a0;
+            --shadow: 0 18px 45px rgba(0, 0, 0, 0.08);
         }
 
         body.dark-mode {
@@ -58,7 +58,7 @@
         body {
             margin: 0;
             min-height: 100vh;
-            background: var(--bg);
+            background: #f5f5f5;
             color: var(--text);
             font-family: "Inter", Arial, sans-serif;
         }
@@ -66,11 +66,10 @@
         body::before {
             content: "";
             position: fixed;
-            inset: 0 0 auto;
-            height: 260px;
+            inset: 0;
             background:
-                linear-gradient(120deg, rgba(14, 46, 68, 0.96), rgba(0, 106, 142, 0.92)),
-                radial-gradient(circle at 86% 12%, rgba(185, 147, 74, 0.28), transparent 26%);
+                radial-gradient(circle at 78% 18%, rgba(255, 255, 255, 0.18), transparent 22%),
+                linear-gradient(135deg, #050505 0%, #121212 46%, #252525 100%);
             z-index: -1;
         }
 
@@ -79,9 +78,9 @@
         }
 
         .app-shell {
-            width: min(1440px, calc(100% - 40px));
+            width: 100%;
             margin: 0 auto;
-            padding: 22px 0 36px;
+            padding: 0 0 56px;
         }
 
         .topbar {
@@ -91,21 +90,19 @@
             align-items: center;
             justify-content: space-between;
             gap: 18px;
-            padding: 24px;
-            background: rgba(255, 255, 255, 0.96);
-            border: 1px solid rgba(255, 255, 255, 0.72);
-            border-radius: 8px;
-            box-shadow: var(--shadow);
+            width: min(1440px, calc(100% - 40px));
+            margin: 0 auto;
+            padding: 18px 4px;
+            background: transparent;
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+            color: #fff;
+            z-index: 2;
         }
 
         .topbar::before {
-            content: "";
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 6px;
-            background: linear-gradient(180deg, var(--gold), var(--teal));
+            display: none;
         }
 
         .brand {
@@ -121,10 +118,10 @@
             display: grid;
             place-items: center;
             border-radius: 8px;
-            background: linear-gradient(135deg, var(--navy), var(--primary));
+            background: rgba(255, 255, 255, 0.14);
             color: #fff;
             font-size: 26px;
-            box-shadow: 0 14px 30px rgba(0, 106, 142, 0.20);
+            box-shadow: none;
         }
 
         .clinical-kicker {
@@ -132,7 +129,7 @@
             align-items: center;
             gap: 6px;
             margin-bottom: 5px;
-            color: var(--gold);
+            color: rgba(255, 255, 255, 0.72);
             font-size: 12px;
             font-weight: 800;
             text-transform: uppercase;
@@ -147,7 +144,7 @@
 
         .brand p {
             margin: 4px 0 0;
-            color: var(--muted);
+            color: rgba(255, 255, 255, 0.72);
             font-size: 14px;
         }
 
@@ -166,27 +163,28 @@
             gap: 8px;
             padding: 8px 12px;
             border-radius: 8px;
-            background: #fff;
-            border: 1px solid var(--border);
-            color: var(--muted);
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            color: rgba(255, 255, 255, 0.88);
             font-size: 14px;
             font-weight: 600;
         }
 
         .status-pill.online {
-            color: var(--green);
+            color: #fff;
         }
 
         .status-pill.refreshing {
-            color: var(--primary);
+            color: #fff;
         }
 
         .toolbar {
+            width: min(1440px, calc(100% - 40px));
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 16px;
-            margin-top: 16px;
+            margin: 22px auto 0;
             padding: 14px;
             background: rgba(255, 255, 255, 0.96);
             border: 1px solid rgba(255, 255, 255, 0.70);
@@ -262,7 +260,8 @@
         }
 
         .filters-panel {
-            margin-top: 16px;
+            width: min(1440px, calc(100% - 40px));
+            margin: 16px auto 0;
         }
 
         .filters-form {
@@ -326,33 +325,37 @@
 
         .live-overview {
             display: grid;
-            grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(180px, 0.7fr));
-            gap: 16px;
-            margin-top: 16px;
+            grid-template-columns: repeat(3, minmax(180px, 260px));
+            gap: 18px;
+            min-height: calc(100vh - 94px);
+            margin-top: -1px;
+            padding: 52px 40px 48px;
+            align-content: end;
+            justify-content: center;
+            color: #fff;
         }
 
         .live-card {
             position: relative;
             overflow: hidden;
-            padding: 24px;
+            grid-column: 1 / -1;
+            align-self: center;
+            justify-self: center;
+            max-width: 980px;
+            width: min(100%, 980px);
+            padding: 8vh 20px 10vh;
             border-radius: 8px;
-            border: 1px solid rgba(255, 255, 255, 0.72);
-            background:
-                linear-gradient(135deg, rgba(14, 46, 68, 0.98), rgba(0, 106, 142, 0.94)),
-                var(--navy);
+            border: 0;
+            background: transparent;
             color: #fff;
-            box-shadow: var(--shadow);
+            box-shadow: none;
+            text-align: center;
         }
 
         .live-card::after {
             content: "";
             position: absolute;
-            right: -80px;
-            top: -80px;
-            width: 210px;
-            height: 210px;
-            border-radius: 50%;
-            border: 36px solid rgba(255, 255, 255, 0.08);
+            display: none;
         }
 
         .live-label {
@@ -367,32 +370,36 @@
 
         .live-temp {
             margin-top: 14px;
-            font-size: 64px;
+            font-size: clamp(76px, 12vw, 154px);
             line-height: 1;
             font-weight: 800;
             letter-spacing: 0;
         }
 
         .live-meta {
-            margin-top: 12px;
+            margin-top: 18px;
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
+            justify-content: center;
             color: rgba(255, 255, 255, 0.84);
             font-weight: 700;
         }
 
         .live-mini {
-            padding: 20px;
-            border: 1px solid var(--border);
+            min-height: 112px;
+            padding: 22px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
             border-radius: 8px;
-            background: rgba(255, 255, 255, 0.96);
-            box-shadow: var(--shadow);
+            background: rgba(255, 255, 255, 0.12);
+            color: #fff;
+            box-shadow: none;
+            backdrop-filter: blur(14px);
         }
 
         .live-mini span {
             display: block;
-            color: var(--muted);
+            color: rgba(255, 255, 255, 0.72);
             font-size: 13px;
             font-weight: 800;
             margin-bottom: 8px;
@@ -403,11 +410,16 @@
             line-height: 1;
         }
 
+        .live-mini .hum-value {
+            color: #fff;
+        }
+
         .stats-grid {
+            width: min(1440px, calc(100% - 40px));
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 16px;
-            margin-top: 16px;
+            margin: 16px auto 0;
         }
 
         .metric-card,
@@ -476,10 +488,11 @@
         .hum-value { color: var(--teal); }
 
         .main-grid {
+            width: min(1440px, calc(100% - 40px));
             display: grid;
             grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
             gap: 16px;
-            margin-top: 16px;
+            margin: 16px auto 0;
         }
 
         .panel {
@@ -487,6 +500,12 @@
             background:
                 linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(250, 253, 255, 0.98)),
                 var(--surface);
+        }
+
+        .app-shell > .panel {
+            width: min(1440px, calc(100% - 40px));
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .panel-header {
@@ -710,11 +729,12 @@
         }
 
         .section-heading {
+            width: min(1440px, calc(100% - 40px));
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
-            margin: 22px 0 12px;
+            margin: 22px auto 12px;
         }
 
         .section-heading h2 {
@@ -730,9 +750,11 @@
         }
 
         .rooms-grid {
+            width: min(1440px, calc(100% - 40px));
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 16px;
+            margin: 0 auto;
         }
 
         .room-card {
@@ -837,8 +859,8 @@
 
         @media (max-width: 720px) {
             .app-shell {
-                width: min(100% - 24px, 1440px);
-                padding-top: 12px;
+                width: 100%;
+                padding-top: 0;
             }
 
             .topbar,
@@ -910,6 +932,41 @@
                 </div>
             </div>
         </header>
+
+        <section class="live-overview" aria-label="Temperature en temps reel">
+            <article class="live-card">
+                <div class="live-label"><i class="fas fa-temperature-half"></i> Temperature en temps reel</div>
+                <div class="live-temp">
+                    {{ derniere_mesure_globale.temperature|floatformat:"1"|default:"--" }}&deg;C
+                </div>
+                <div class="live-meta">
+                    <span><i class="fas fa-location-dot"></i> {{ derniere_mesure_globale.piece_display|default:"Aucune zone" }}</span>
+                    <span>
+                        <i class="fas fa-calendar-clock"></i>
+                        {% if derniere_mesure_globale %}
+                            {{ derniere_mesure_globale.timestamp|date:"d/m/Y" }} a {{ derniere_mesure_globale.timestamp|time:"H:i:s" }}
+                        {% else %}
+                            --/--/---- a --:--:--
+                        {% endif %}
+                    </span>
+                </div>
+            </article>
+
+            <article class="live-mini">
+                <span><i class="fas fa-droplet"></i> Humidite actuelle</span>
+                <strong class="hum-value">{{ derniere_mesure_globale.humidite|floatformat:"1"|default:"--" }}%</strong>
+            </article>
+
+            <article class="live-mini">
+                <span><i class="fas fa-database"></i> Mesures filtrees</span>
+                <strong>{{ filtered_total }}</strong>
+            </article>
+
+            <article class="live-mini">
+                <span><i class="fas fa-rotate"></i> Actualisation</span>
+                <strong>8s</strong>
+            </article>
+        </section>
 
         <section class="toolbar" aria-label="Commandes">
             <div class="theme-switch">
@@ -990,41 +1047,6 @@
                     </a>
                 </div>
             </form>
-        </section>
-
-        <section class="live-overview" aria-label="Temperature en temps reel">
-            <article class="live-card">
-                <div class="live-label"><i class="fas fa-temperature-half"></i> Temperature en temps reel</div>
-                <div class="live-temp">
-                    {{ derniere_mesure_globale.temperature|floatformat:"1"|default:"--" }}&deg;C
-                </div>
-                <div class="live-meta">
-                    <span><i class="fas fa-location-dot"></i> {{ derniere_mesure_globale.piece_display|default:"Aucune zone" }}</span>
-                    <span>
-                        <i class="fas fa-calendar-clock"></i>
-                        {% if derniere_mesure_globale %}
-                            {{ derniere_mesure_globale.timestamp|date:"d/m/Y" }} a {{ derniere_mesure_globale.timestamp|time:"H:i:s" }}
-                        {% else %}
-                            --/--/---- a --:--:--
-                        {% endif %}
-                    </span>
-                </div>
-            </article>
-
-            <article class="live-mini">
-                <span><i class="fas fa-droplet"></i> Humidite actuelle</span>
-                <strong class="hum-value">{{ derniere_mesure_globale.humidite|floatformat:"1"|default:"--" }}%</strong>
-            </article>
-
-            <article class="live-mini">
-                <span><i class="fas fa-database"></i> Mesures filtrees</span>
-                <strong>{{ filtered_total }}</strong>
-            </article>
-
-            <article class="live-mini">
-                <span><i class="fas fa-rotate"></i> Actualisation</span>
-                <strong>8s</strong>
-            </article>
         </section>
 
         <section class="panel" style="margin-top: 16px;">
