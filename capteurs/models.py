@@ -32,3 +32,20 @@ class DHT11(models.Model):
 
     class Meta:
         ordering = ['-date']
+
+
+class AlertSettings(models.Model):
+    singleton_key = models.PositiveSmallIntegerField(default=1, unique=True, editable=False)
+    temperature_threshold = models.FloatField(default=26)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @classmethod
+    def load(cls, default_threshold=26):
+        settings_obj, _created = cls.objects.get_or_create(
+            singleton_key=1,
+            defaults={'temperature_threshold': default_threshold},
+        )
+        return settings_obj
+
+    def __str__(self):
+        return f"Seuil temperature: {self.temperature_threshold} C"

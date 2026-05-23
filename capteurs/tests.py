@@ -4,7 +4,7 @@ from unittest.mock import patch
 import requests
 from django.test import Client, TestCase, override_settings
 
-from .models import DHT11, Mesure, Piece
+from .models import AlertSettings, DHT11, Mesure, Piece
 
 
 class DHT11ApiTests(TestCase):
@@ -81,6 +81,50 @@ class DHT11ApiTests(TestCase):
         content = export_response.content.decode('utf-8-sig')
         self.assertIn('BLOC OPERATOIRE', content)
         self.assertNotIn('BLOC REANIMATION', content)
+
+    def test_user_can_update_temperature_alert_threshold(self):
+        response = self.client.post(
+            '/settings/alert-threshold/',
+            data={'temperature_threshold': '24.5'},
+            HTTP_REFERER='/',
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(AlertSettings.load().temperature_threshold, 24.5)
+
+        dashboard_response = self.client.get('/')
+        self.assertContains(dashboard_response, 'Seuil 24,5')
+
+    @override_settings(
+        TELEGRAM_BOT_TOKEN='telegram-token',
+        TELEGRAM_CHAT_ID='123456',
+        ALERT_EMAIL_TO=[],
+        TWILIO_ACCOUNT_SID='',
+        TWILIO_AUTH_TOKEN='',
+        TWILIO_WHATSAPP_FROM='',
+        CALLMEBOT_API_KEY='VOTRE_CLE_API',
+        TEMPERATURE_ALERT_THRESHOLD=26,
+    )
+    @patch('capteurs.alerts.requests.post')
+    def test_saved_threshold_is_used_by_alert_agent(self, mock_post):
+        alert_settings = AlertSettings.load()
+        alert_settings.temperature_threshold = 24
+        alert_settings.save()
+        mock_post.return_value.raise_for_status.return_value = None
+
+        self.client.post(
+            '/api/add/',
+            data=json.dumps({'piece': 'BlocSeuil', 'temperature': 23, 'humidite': 50}),
+            content_type='application/json',
+        )
+        self.client.post(
+            '/api/add/',
+            data=json.dumps({'piece': 'BlocSeuil', 'temperature': 25, 'humidite': 50}),
+            content_type='application/json',
+        )
+
+        self.assertTrue(mock_post.called)
+        self.assertIn('Seuil: 24.0 C', mock_post.call_args.kwargs['data']['text'])
 
     @override_settings(
         TELEGRAM_BOT_TOKEN='telegram-token',

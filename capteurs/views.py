@@ -4,15 +4,17 @@ import csv
 from datetime import datetime, timedelta
 
 from django.conf import settings
+from django.contrib import messages
 from django.db.models import Avg, Max, Min
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 
 from .api import sync_mesure_from_dht11
-from .alerts import build_temperature_ai_report
-from .models import DHT11, Mesure, Piece
+from .alerts import build_temperature_ai_report, get_temperature_threshold
+from .models import AlertSettings, DHT11, Mesure, Piece
 
 logger = logging.getLogger(__name__)
 
@@ -76,6 +78,7 @@ def _sample_for_chart(mesures, limit=60):
 
 
 def dashboard(request):
+    alert_settings = AlertSettings.load(settings.TEMPERATURE_ALERT_THRESHOLD)
     pieces = Piece.objects.all().order_by('nom')
     for piece in pieces:
         piece.display_nom = _display_piece_name(piece)
@@ -139,7 +142,8 @@ def dashboard(request):
         'derniere_mesure_globale': derniere_mesure_globale,
         'ai_report': ai_report,
         'stats': stats,
-        'temperature_threshold': settings.TEMPERATURE_ALERT_THRESHOLD,
+        'alert_settings': alert_settings,
+        'temperature_threshold': get_temperature_threshold(),
         'total_mesures': Mesure.objects.count(),
         'filtered_total': periode_stats.count(),
         'chart_labels': chart_labels,
@@ -151,6 +155,27 @@ def dashboard(request):
     }
 
     return render(request, 'capteurs/dashboard.html', context)
+
+
+@require_POST
+def update_alert_settings(request):
+    threshold_raw = request.POST.get('temperature_threshold', '').strip().replace(',', '.')
+
+    try:
+        threshold = float(threshold_raw)
+    except ValueError:
+        messages.error(request, 'Seuil invalide. Entrez une valeur numerique.')
+        return redirect(request.META.get('HTTP_REFERER', '/'))
+
+    if threshold < 10 or threshold > 60:
+        messages.error(request, 'Le seuil doit etre entre 10 C et 60 C.')
+        return redirect(request.META.get('HTTP_REFERER', '/'))
+
+    alert_settings = AlertSettings.load(settings.TEMPERATURE_ALERT_THRESHOLD)
+    alert_settings.temperature_threshold = threshold
+    alert_settings.save(update_fields=['temperature_threshold', 'updated_at'])
+    messages.success(request, f'Seuil d alerte mis a jour: {threshold:.1f} C.')
+    return redirect(request.META.get('HTTP_REFERER', '/'))
 
 
 def _stats_24h():

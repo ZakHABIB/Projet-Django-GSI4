@@ -671,6 +671,44 @@
             font-weight: 800;
         }
 
+        .message-list {
+            display: grid;
+            gap: 8px;
+            margin-top: 16px;
+        }
+
+        .message-item {
+            padding: 12px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            font-weight: 800;
+        }
+
+        .message-item.success {
+            color: var(--green);
+            border-color: rgba(7, 129, 95, 0.28);
+            background: rgba(7, 129, 95, 0.08);
+        }
+
+        .message-item.error {
+            color: var(--coral);
+            border-color: rgba(217, 31, 69, 0.28);
+            background: rgba(217, 31, 69, 0.08);
+        }
+
+        .threshold-form {
+            display: flex;
+            gap: 8px;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+
+        .threshold-form .field {
+            min-width: 180px;
+            flex: 1;
+        }
+
         .section-heading {
             display: flex;
             align-items: center;
@@ -899,6 +937,16 @@
             </div>
         </section>
 
+        {% if messages %}
+        <section class="message-list" aria-label="Messages systeme">
+            {% for message in messages %}
+            <div class="message-item {{ message.tags }}">
+                <i class="fas fa-circle-info"></i> {{ message }}
+            </div>
+            {% endfor %}
+        </section>
+        {% endif %}
+
         <section class="panel filters-panel" aria-label="Filtres des mesures">
             <div class="panel-header">
                 <div>
@@ -985,8 +1033,27 @@
                     <h2 class="panel-title"><i class="fas fa-brain"></i> Agent IA environnement clinique</h2>
                     <p class="panel-subtitle">Analyse automatique de la variation temperature/humidite et recommandations.</p>
                 </div>
-                <span class="status-pill">Seuil {{ temperature_threshold|floatformat:"0" }}&deg;C</span>
+                <span class="status-pill">Seuil {{ temperature_threshold|floatformat:"1" }}&deg;C</span>
             </div>
+            <form class="threshold-form" method="post" action="/settings/alert-threshold/">
+                {% csrf_token %}
+                <div class="field">
+                    <label for="temperature_threshold">Changer le seuil d alerte</label>
+                    <input
+                        id="temperature_threshold"
+                        type="number"
+                        name="temperature_threshold"
+                        min="10"
+                        max="60"
+                        step="0.1"
+                        value="{{ temperature_threshold|stringformat:'.1f' }}"
+                    >
+                </div>
+                <button class="filter-submit" type="submit">
+                    <i class="fas fa-floppy-disk"></i>
+                    Enregistrer
+                </button>
+            </form>
             <div class="details-grid">
                 <div class="detail-tile">
                     <span>Diagnostic IA</span>

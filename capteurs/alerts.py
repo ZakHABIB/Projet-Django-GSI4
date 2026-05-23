@@ -5,6 +5,8 @@ import requests
 from django.conf import settings
 from django.core.mail import send_mail
 
+from .models import AlertSettings
+
 logger = logging.getLogger(__name__)
 
 
@@ -14,11 +16,15 @@ def _format_value(value, unit):
     return f'{value:.1f}{unit}'
 
 
+def get_temperature_threshold():
+    return AlertSettings.load(settings.TEMPERATURE_ALERT_THRESHOLD).temperature_threshold
+
+
 def should_send_temperature_alert(current_temperature, previous_temperature=None):
     if current_temperature is None:
         return False
 
-    threshold = settings.TEMPERATURE_ALERT_THRESHOLD
+    threshold = get_temperature_threshold()
     if current_temperature < threshold:
         return False
 
@@ -29,7 +35,7 @@ def build_temperature_ai_report(mesure, previous_mesure=None):
     current = mesure.temperature
     previous = previous_mesure.temperature if previous_mesure else None
     humidity = mesure.humidite
-    threshold = settings.TEMPERATURE_ALERT_THRESHOLD
+    threshold = get_temperature_threshold()
 
     if current is None:
         return {
@@ -79,7 +85,7 @@ def build_temperature_alert_message(mesure, previous_mesure=None):
     return (
         f"Alerte IoT clinique: temperature seuil depassee dans {mesure.piece.nom}. "
         f"Temperature: {_format_value(mesure.temperature, ' C')}. "
-        f"Seuil: {settings.TEMPERATURE_ALERT_THRESHOLD:.1f} C. "
+        f"Seuil: {get_temperature_threshold():.1f} C. "
         f"Humidite: {_format_value(mesure.humidite, '%')}.\n"
         f"{ai_report['title']}\n"
         f"Variation: {ai_report['trend']}\n"
